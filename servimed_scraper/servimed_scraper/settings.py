@@ -21,6 +21,9 @@ ADDONS = {}
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
+# Permitir requisições para domínios externos (API Cotefácil)
+ROBOTSTXT_OBEY = False  # Desabilitar para permitir acesso à API externa
+
 # Concurrency and throttling settings
 #CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 1

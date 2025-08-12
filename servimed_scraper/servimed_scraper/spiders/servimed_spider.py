@@ -1,24 +1,39 @@
 import json
 import scrapy
+import urllib.parse
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class ServimedSpider(scrapy.Spider):
     name = 'servimed'
     
+    handle_httpstatus_list = [401, 403]
+    
     def __init__(self, username=None, password=None, client_id=None):
-        self.username = username
-        self.password = password
-        self.client_id = client_id
+        self.username = username or os.getenv('SERVIMED_USERNAME')
+        self.password = password or os.getenv('SERVIMED_PASSWORD')
+        self.client_id = client_id or os.getenv('SERVIMED_CLIENT_ID')
         
-        # Headers base para todas as requisições
+        self.cotefacil_username = os.getenv('COTEFACIL_USERNAME')
+        self.cotefacil_password = os.getenv('COTEFACIL_PASSWORD')
+        self.cotefacil_client_id = os.getenv('COTEFACIL_CLIENT_ID')
+        self.cotefacil_client_secret = os.getenv('COTEFACIL_CLIENT_SECRET')
+        
+        self.servimed_base_url = os.getenv('SERVIMED_BASE_URL', 'https://pedidoeletronico.servimed.com.br')
+        self.servimed_api_url = os.getenv('SERVIMED_API_URL', 'https://peapi.servimed.com.br')
+        self.cotefacil_base_url = os.getenv('COTEFACIL_BASE_URL', 'https://desafio.cotefacil.net')
+        
         self.base_headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3',
             'Accept-Encoding': 'gzip, deflate, br, zstd',
             'Content-Type': 'application/json',
-            'Origin': 'https://pedidoeletronico.servimed.com.br',
-            'Referer': 'https://pedidoeletronico.servimed.com.br/',
+            'Origin': self.servimed_base_url,
+            'Referer': f'{self.servimed_base_url}/',
             'Connection': 'keep-alive',
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
@@ -27,29 +42,25 @@ class ServimedSpider(scrapy.Spider):
             'Cache-Control': 'no-cache',
         }
         
-        # Headers específicos para login (serão atualizados após autenticação)
         self.login_headers = self.base_headers.copy()
         
-        # Headers de sessão (serão preenchidos após login)
         self.session_headers = self.base_headers.copy()
         
     def start_requests(self):
         yield scrapy.Request(
-            url="https://pedidoeletronico.servimed.com.br/",
+            url=f"{self.servimed_base_url}/",
             callback=self.parse_login_page,
             headers=self.base_headers
         )
         
     def parse_login_page(self, response):
-        # Dados de login baseados na investigação do DevTools
         login_data = {
-            'usuario': self.username,  # O site usa 'usuario', não 'username'
-            'senha': self.password     # O site usa 'senha', não 'password'
+            'usuario': self.username,
+            'senha': self.password
         }
 
-        # URL encontrada na investigação
         yield scrapy.Request(
-            url="https://peapi.servimed.com.br/api/usuario/login",
+            url=f"{self.servimed_api_url}/api/usuario/login",
             method="POST",
             body=json.dumps(login_data),
             headers=self.login_headers,
@@ -58,11 +69,9 @@ class ServimedSpider(scrapy.Spider):
         
     def handle_login_response(self, response):
         if response.status == 200:
-            # Extrair dados do usuário da resposta JSON
             data = json.loads(response.text)
             usuario_data = data.get('usuario', {})
             
-            # Extrair tokens dos cookies da resposta
             cookies = response.headers.getlist('Set-Cookie')
             session_token = None
             access_token = None
@@ -74,7 +83,6 @@ class ServimedSpider(scrapy.Spider):
                 elif cookie_str.startswith('accesstoken='):
                     access_token = cookie_str.split('accesstoken=')[1].split(';')[0]
             
-            # Atualizar headers de sessão com os dados obtidos
             if access_token and session_token:
                 self.session_headers.update({
                     'accesstoken': access_token,
@@ -85,7 +93,6 @@ class ServimedSpider(scrapy.Spider):
                 
                 self.logger.info(f"Login realizado com sucesso! Usuário: {usuario_data.get('codigoUsuario')}")
                 
-                # Prosseguir para busca de produtos
                 yield from self.fetch_products(response)
             else:
                 self.logger.error("Não foi possível extrair os tokens de autenticação")
@@ -94,50 +101,103 @@ class ServimedSpider(scrapy.Spider):
             self.logger.error(f"Resposta: {response.text}")
         
     def fetch_products(self, response):
-        # TODO: Investigar endpoint correto de produtos
-        # Por enquanto, simular dados para continuar o desenvolvimento
+        auth_url = f"{self.cotefacil_base_url}/oauth/token"
         
-        self.logger.info("SIMULANDO dados de produtos - endpoint real precisa ser investigado")
+        self.logger.info("Autenticando na API Cotefácil...")
         
-        # Produtos simulados baseados na estrutura esperada
-        produtos_simulados = [
-            {
-                'gtin': '7891234567890',
-                'codigo': 'DIP001',
-                'descricao': 'Dipirona Sódica 500mg c/ 20 comprimidos',
-                'preco_fabrica': 15.90,
-                'estoque': 100
-            },
-            {
-                'gtin': '7891234567891',
-                'codigo': 'PAR002',
-                'descricao': 'Paracetamol 750mg c/ 20 comprimidos',
-                'preco_fabrica': 12.50,
-                'estoque': 50
-            },
-            {
-                'gtin': '7891234567892',
-                'codigo': 'IBU003',
-                'descricao': 'Ibuprofeno 600mg c/ 20 comprimidos',
-                'preco_fabrica': 18.75,
-                'estoque': 75
-            }
-        ]
+        auth_data = {
+            "username": self.cotefacil_username,
+            "password": self.cotefacil_password,
+            "client_id": self.cotefacil_client_id,
+            "client_secret": self.cotefacil_client_secret,
+            "grant_type": "password"
+        }
         
-        self.logger.info(f"Produtos simulados encontrados: {len(produtos_simulados)}")
+        auth_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0'
+        }
         
-        # Retornar os dados simulados
-        for produto in produtos_simulados:
-            yield produto
+        auth_body = urllib.parse.urlencode(auth_data)
+        
+        yield scrapy.Request(
+            url=auth_url,
+            method='POST',
+            body=auth_body,
+            headers=auth_headers,
+            callback=self.handle_api_auth,
+            errback=self.handle_api_error,
+            dont_filter=True
+        )
+    
+    def handle_api_auth(self, response):
+        if response.status == 200:
+            try:
+                auth_data = json.loads(response.text)
+                access_token = auth_data.get('access_token')
+                
+                if access_token:
+                    self.logger.info("Autenticação na API Cotefácil bem-sucedida!")
+                    
+                    products_url = f"{self.cotefacil_base_url}/produto"
+                    
+                    api_headers = {
+                        'Authorization': f'Bearer {access_token}',
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0'
+                    }
+                    
+                    yield scrapy.Request(
+                        url=products_url,
+                        method='GET',
+                        headers=api_headers,
+                        callback=self.parse_products_from_api,
+                        errback=self.handle_api_error,
+                        dont_filter=True
+                    )
+                else:
+                    self.logger.error("Token não encontrado na resposta de autenticação")
+                    
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Erro ao decodificar resposta de autenticação: {e}")
+                self.logger.error(f"Resposta: {response.text}")
+        else:
+            self.logger.error(f"Erro na autenticação da API: Status {response.status}")
+            self.logger.error(f"Resposta: {response.text}")
+    
+    def handle_api_error(self, failure):
+        self.logger.error(f"Erro ao acessar API Cotefácil: {failure}")
+    
+    def parse_products_from_api(self, response):
+        if response.status == 200:
+            try:
+                products = json.loads(response.text)
+                self.logger.info(f"Produtos encontrados na API: {len(products)}")
+                
+                for produto in products:
+                    yield {
+                        'gtin': produto.get('gtin'),
+                        'codigo': produto.get('codigo'),
+                        'descricao': produto.get('descricao'),
+                        'preco_fabrica': produto.get('preco_fabrica'),
+                        'estoque': produto.get('estoque')
+                    }
+                    
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Erro ao decodificar JSON da API: {e}")
+                self.logger.error(f"Resposta: {response.text}")
+        elif response.status == 401:
+            self.logger.error("API requer autenticação (401)")
+        else:
+            self.logger.error(f"Erro na API de produtos: Status {response.status}")
+            self.logger.error(f"Resposta: {response.text}")
     
     def parse_products(self, response):
-        # Processar resposta dos produtos
         if response.status == 200:
             data = json.loads(response.text)
-            # Aqui você processará os produtos retornados
             self.logger.info(f"Produtos encontrados: {len(data.get('produtos', []))}")
             
-            # Retornar os dados dos produtos
             for produto in data.get('produtos', []):
                 yield {
                     'gtin': produto.get('gtin'),
