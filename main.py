@@ -3,7 +3,25 @@
 SERVIMED SCRAPER - ARQUIVO PRINCIPAL
 ====================================
 
-Script principal para execução do scraper Servimed.
+Script princip        # Credenciais do .env ou argumentos
+        usuario = args.usuario or os.getenv('CALLBACK_API_USER')
+        senha = args.senha or os.getenv('CALLBACK_API_PASSWORD')
+        callback_url = os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
+        
+        if not usuario or not senha:
+            print("ERRO: Credenciais não encontradas")
+            print("Forneça via argumentos --usuario/--senha ou configure no .env:")
+            print("CALLBACK_API_USER e CALLBACK_API_PASSWORD")
+            return
+        
+        task_id = client.enqueue_scraping_task(
+            usuario=usuario,
+            senha=senha,
+            callback_url=callback_url,
+            filtro=args.filtro or "",
+            max_pages=args.max_pages or 1,
+            framework="scrapy"  # Sempre usar Scrapy
+        ) scraper Servimed.
 Sempre usa Scrapy framework em todos os níveis.
 
 - Nível 1: Execução direta (síncrona)
@@ -242,12 +260,6 @@ Pré-requisitos para Nível 2:
         '--senha',
         type=str,
         help='[Nivel 2] Senha para autenticacao na API (padrao: do .env)'
-    )
-    
-    parser.add_argument(
-        '--callback-url',
-        type=str,
-        help='[Nivel 2] URL para callback (padrao: do .env)'
     )
     
     args = parser.parse_args()

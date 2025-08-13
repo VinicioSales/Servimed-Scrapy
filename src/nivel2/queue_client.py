@@ -31,7 +31,7 @@ class TaskQueueClient:
         Args:
             usuario: Usuário para autenticação na API de callback
             senha: Senha para autenticação na API de callback
-            callback_url: URL da API de callback
+            callback_url: URL da API de callback (sempre do .env)
             filtro: Filtro para produtos (opcional)
             max_pages: Número máximo de páginas (opcional)
             framework: Framework para scraping (original ou scrapy)
