@@ -1,0 +1,67 @@
+# SERVIMED SCRAPER - DEPENDÊNCIAS
+# ===============================
+
+# Web Scraping
+scrapy>=2.11.0
+selenium>=4.15.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# HTTP Requests
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Data Processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# JSON/Text Processing
+jsonschema>=4.19.0
+
+# Async Queue System (Nível 2)
+celery>=5.3.0
+redis>=5.0.0
+kombu>=5.3.0
+
+# OAuth2 Authentication
+requests-oauthlib>=1.3.1
+oauthlib>=3.2.2
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Development Tools
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+
+# System/Utilities
+psutil>=5.9.0
+python-dateutil>=2.8.0
+
+# Web Driver Management
+webdriver-manager>=4.0.0
+
+# Logging
+structlog>=23.1.0
+
+# Data Validation
+pydantic>=2.4.0
+
+# Progress Bars
+tqdm>=4.66.0
+
+# Configuration
+pyyaml>=6.0.0
+
+# Database (opcional para persistência)
+sqlalchemy>=2.0.0
+sqlite3  # Built-in Python
+
+# Monitoring (opcional)
+flower>=2.0.0  # Para monitorar Celery
+
+# API Documentation (opcional)
+fastapi>=0.104.0  # Se quiser expor API REST
+uvicorn>=0.24.0

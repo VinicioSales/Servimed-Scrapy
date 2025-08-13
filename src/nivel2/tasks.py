@@ -1,0 +1,153 @@
+"""
+Tarefas Celery Simplificadas - Versão Windows
+==============================================
+
+Versão otimizada para funcionamento no Windows com pool=solo
+"""
+
+import os
+import sys
+import json
+import time
+from pathlib import Path
+
+# Configurar path de forma mais robusta
+current_dir = Path(__file__).parent.absolute()
+project_root = current_dir.parent.parent
+src_dir = project_root / "src"
+
+# Adicionar ao path se não estiver
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+
+from src.nivel2.celery_app import app
+
+
+@app.task(bind=True)
+def test_connection_task_simple(self):
+    """Tarefa de teste simples"""
+    try:
+        return {
+            'status': 'success',
+            'message': 'Worker funcionando',
+            'task_id': self.request.id,
+            'timestamp': time.time()
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e),
+            'task_id': self.request.id
+        }
+
+
+@app.task(bind=True, autoretry_for=(Exception,), retry_kwargs={'max_retries': 2, 'countdown': 30})
+def processar_scraping_simple(self, task_data):
+    """
+    Versão simplificada da tarefa de scraping
+    """
+    try:
+        task_id = self.request.id
+        print(f"[{task_id}] Iniciando processamento...")
+        
+        # Importar módulos dentro da task para evitar problemas de path
+        from servimed_scraper.scraper import ServimedScraperCompleto
+        from api_client.callback_client import CallbackAPIClient
+        
+        print(f"[{task_id}] Imports realizados com sucesso")
+        
+        # Extrair dados da tarefa
+        usuario = task_data.get('usuario')
+        senha = task_data.get('senha')
+        callback_url = task_data.get('callback_url', 'https://desafio.cotefacil.net')
+        filtro = task_data.get('filtro', '')
+        max_pages = task_data.get('max_pages', 1)
+        
+        print(f"[{task_id}] Configurações: filtro='{filtro}', max_pages={max_pages}")
+        
+        # 1. Executar scraping
+        print(f"[{task_id}] Iniciando scraping...")
+        scraper = ServimedScraperCompleto()
+        resultado_scraping = scraper.run(filtro=filtro, max_pages=max_pages)
+        
+        produtos_coletados = resultado_scraping['total_produtos']
+        print(f"[{task_id}] Scraping concluído: {produtos_coletados} produtos")
+        
+        # 2. Enviar para API de callback
+        print(f"[{task_id}] Enviando para API de callback...")
+        api_client = CallbackAPIClient(base_url=callback_url)
+        
+        # Autenticar
+        print(f"[{task_id}] Autenticando na API...")
+        api_client.authenticate(
+            username=usuario,
+            password=senha,
+            client_id="your_client_id",  # Pode ser configurável
+            client_secret="your_client_secret"  # Pode ser configurável
+        )
+        
+        # Enviar produtos
+        print(f"[{task_id}] Enviando produtos para API...")
+        
+        # Ler arquivo de produtos gerado
+        arquivo_produtos = resultado_scraping['arquivo_salvo']
+        with open(arquivo_produtos, 'r', encoding='utf-8') as f:
+            produtos = json.load(f)
+        
+        api_response = api_client.send_products(produtos)
+        print(f"[{task_id}] Resposta da API: {api_response}")
+        
+        resultado_final = {
+            'status': 'success',
+            'task_id': task_id,
+            'produtos_coletados': produtos_coletados,
+            'tempo_scraping': resultado_scraping['tempo_execucao'],
+            'arquivo_local': arquivo_produtos,
+            'api_response': api_response,
+            'callback_url': callback_url,
+            'filtro_usado': filtro,
+            'timestamp': time.time()
+        }
+        
+        print(f"[{task_id}] Tarefa concluída com sucesso!")
+        return resultado_final
+        
+    except Exception as e:
+        error_msg = f"Erro na tarefa {self.request.id}: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        
+        # Log do erro para debug
+        import traceback
+        traceback.print_exc()
+        
+        return {
+            'status': 'error',
+            'task_id': self.request.id,
+            'error': error_msg,
+            'timestamp': time.time()
+        }
+
+
+@app.task(bind=True)
+def status_task_simple(self, message="Status check"):
+    """Tarefa simples de status"""
+    return {
+        'status': 'active',
+        'message': message,
+        'task_id': self.request.id,
+        'worker_info': {
+            'pid': os.getpid(),
+            'cwd': str(Path.cwd()),
+            'python_path': sys.path[:3]  # Primeiros 3 itens do path
+        }
+    }
+
+
+# Registrar tarefas no app
+app.tasks.register(test_connection_task_simple)
+app.tasks.register(processar_scraping_simple)
+app.tasks.register(status_task_simple)
+
+print("Tarefas simplificadas registradas com sucesso!")

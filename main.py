@@ -3,14 +3,14 @@
 SERVIMED SCRAPER - ARQUIVO PRINCIPAL
 ====================================
 
-Script principal para execução do scraper Servimed.
-Suporta parâmetros de linha de comando para diferentes tipos de busca.
+Script principal para execução do scraper Servimed com suporte a dois níveis:
+- Nível 1: Execução direta (síncrona)
+- Nível 2: Processamento via filas (assíncrona)
 
 Exemplos de uso:
-- python main.py                          # Todos os produtos
-- python main.py --filtro "paracetamol"   # Filtrar por termo
-- python main.py --max-pages 10           # Limitar páginas
-- python main.py -f "dipirona" -p 5       # Combinar filtro e limite
+- python main.py --nivel 1 --filtro "paracetamol"      # Nível 1 (direto)
+- python main.py --nivel 2 --enqueue                   # Nível 2 (fila)
+- python main.py --nivel 2 --status TASK_ID            # Status da tarefa
 
 Autor: GitHub Copilot
 Data: 12/08/2025
@@ -18,48 +18,24 @@ Data: 12/08/2025
 
 import argparse
 import sys
+import json
+import time
 from pathlib import Path
 
 # Adiciona o diretório src ao path para importar os módulos
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from servimed_scraper import ServimedScraperCompleto
+try:
+    from servimed_scraper.scraper import ServimedScraperCompleto
+except ImportError:
+    # Fallback para estrutura de arquivos alternativa
+    from scraper import ServimedScraperCompleto
 
 
-def main():
-    """Função principal com suporte a parâmetros de linha de comando"""
-    parser = argparse.ArgumentParser(
-        description='Scraper para coletar produtos do Portal Servimed',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Exemplos de uso:
-  python main.py                          # Todos os produtos
-  python main.py --filtro "paracetamol"   # Filtrar por termo
-  python main.py --max-pages 10           # Limitar páginas
-  python main.py --filtro "dipirona" --max-pages 5
-  
-Arquivos de saída (sempre sobrescreve):
-  data/servimed_produtos_completos.json   # Todos os produtos
-  data/servimed_produtos_filtrados.json   # Produtos filtrados
-  data/servimed_backup.json               # Backup automático
-        """
-    )
-    
-    parser.add_argument(
-        '--filtro', '-f',
-        type=str,
-        default="",
-        help='Termo para filtrar produtos (ex: "paracetamol", "dipirona")'
-    )
-    
-    parser.add_argument(
-        '--max-pages', '-p',
-        type=int,
-        default=None,
-        help='Número máximo de páginas para processar (padrão: sem limite)'
-    )
-    
-    args = parser.parse_args()
+def executar_nivel_1(args):
+    """Execução direta (Nível 1) - Modo original"""
+    print("EXECUTANDO NIVEL 1 - MODO DIRETO")
+    print("=" * 50)
     
     # Inicializa o scraper
     scraper = ServimedScraperCompleto()
@@ -100,6 +76,162 @@ Arquivos de saída (sempre sobrescreve):
     except Exception as e:
         print(f"\nErro durante a execucao: {e}")
         return None
+
+
+def executar_nivel_2(args):
+    """Execução via filas (Nível 2) - Modo assíncrono"""
+    print("EXECUTANDO NIVEL 2 - MODO FILAS")
+    print("=" * 50)
+    
+    try:
+        from nivel2.queue_client import TaskQueueClient
+    except ImportError as e:
+        print(f"Erro ao importar cliente de filas: {e}")
+        print("Certifique-se de que o Redis e Celery estao instalados:")
+        print("pip install celery redis")
+        return None
+    
+    client = TaskQueueClient()
+    
+    if args.enqueue:
+        # Enfileirar nova tarefa
+        print("Enfileirando nova tarefa de scraping...")
+        
+        # Credenciais padrão (podem ser personalizadas)
+        usuario = args.usuario or "juliano@farmaprevonline.com.br"
+        senha = args.senha or "a007299A"
+        callback_url = args.callback_url or "https://desafio.cotefacil.net"
+        
+        task_id = client.enqueue_scraping_task(
+            usuario=usuario,
+            senha=senha,
+            callback_url=callback_url,
+            filtro=args.filtro or "",
+            max_pages=args.max_pages or 1
+        )
+        
+        print(f"Tarefa enfileirada com ID: {task_id}")
+        print(f"Use --status {task_id} para acompanhar o progresso")
+        return {"task_id": task_id}
+    
+    elif args.status:
+        # Verificar status de tarefa
+        print(f"Verificando status da tarefa: {args.status}")
+        status = client.get_task_status(args.status)
+        print(json.dumps(status, indent=2, ensure_ascii=False))
+        return status
+    
+    elif args.worker_status:
+        # Status dos workers
+        print("Status dos workers:")
+        status = client.get_worker_status()
+        print(json.dumps(status, indent=2, ensure_ascii=False))
+        return status
+    
+    else:
+        print("Para Nivel 2, use uma das opcoes:")
+        print("  --enqueue          : Enfileira nova tarefa")
+        print("  --status TASK_ID   : Verifica status de tarefa")
+        print("  --worker-status    : Status dos workers")
+        return None
+
+
+def main():
+    """Função principal com suporte aos dois níveis"""
+    parser = argparse.ArgumentParser(
+        description='Scraper Servimed - Suporte a Nivel 1 (direto) e Nivel 2 (filas)',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos de uso:
+
+NIVEL 1 (Execução Direta):
+  python main.py --nivel 1                             # Todos os produtos
+  python main.py --nivel 1 --filtro "paracetamol"     # Filtrar por termo
+  python main.py --nivel 1 --max-pages 10             # Limitar páginas
+
+NIVEL 2 (Sistema de Filas):
+  python main.py --nivel 2 --enqueue                  # Enfileira tarefa
+  python main.py --nivel 2 --enqueue --filtro "dipirona" --max-pages 5
+  python main.py --nivel 2 --status TASK_ID           # Status da tarefa
+  python main.py --nivel 2 --worker-status            # Status dos workers
+  
+Pré-requisitos para Nível 2:
+  - Redis rodando (redis-server)
+  - Worker Celery ativo (celery -A src.nivel2.celery_app worker --loglevel=info)
+        """
+    )
+    
+    # Argumento principal: nível
+    parser.add_argument(
+        '--nivel', '-n',
+        type=int,
+        choices=[1, 2],
+        default=1,
+        help='Nivel de execucao: 1=Direto, 2=Filas (padrao: 1)'
+    )
+    
+    # Argumentos do Nível 1 (originais)
+    parser.add_argument(
+        '--filtro', '-f',
+        type=str,
+        default="",
+        help='Termo para filtrar produtos (ex: "paracetamol", "dipirona")'
+    )
+    
+    parser.add_argument(
+        '--max-pages', '-p',
+        type=int,
+        default=None,
+        help='Numero maximo de paginas para processar (padrao: sem limite)'
+    )
+    
+    # Argumentos do Nível 2 (filas)
+    parser.add_argument(
+        '--enqueue',
+        action='store_true',
+        help='[Nivel 2] Enfileira nova tarefa de scraping'
+    )
+    
+    parser.add_argument(
+        '--status',
+        type=str,
+        help='[Nivel 2] Verifica status de uma tarefa pelo ID'
+    )
+    
+    parser.add_argument(
+        '--worker-status',
+        action='store_true',
+        help='[Nivel 2] Mostra status dos workers'
+    )
+    
+    parser.add_argument(
+        '--usuario',
+        type=str,
+        help='[Nivel 2] Usuario para autenticacao na API (padrao: do .env)'
+    )
+    
+    parser.add_argument(
+        '--senha',
+        type=str,
+        help='[Nivel 2] Senha para autenticacao na API (padrao: do .env)'
+    )
+    
+    parser.add_argument(
+        '--callback-url',
+        type=str,
+        help='[Nivel 2] URL da API de callback (padrao: https://desafio.cotefacil.net)'
+    )
+    
+    args = parser.parse_args()
+    
+    print(f"SERVIMED SCRAPER - NIVEL {args.nivel}")
+    print("=" * 60)
+    
+    # Executa baseado no nível escolhido
+    if args.nivel == 1:
+        return executar_nivel_1(args)
+    elif args.nivel == 2:
+        return executar_nivel_2(args)
 
 
 if __name__ == "__main__":
