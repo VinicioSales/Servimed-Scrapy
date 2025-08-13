@@ -234,7 +234,7 @@ def gerar_pedido_aleatorio_api(api_client: CallbackAPIClient) -> str:
         str: ID do pedido aleatório ou string vazia se falhar
     """
     try:
-        print("🎯 Gerando pedido aleatório conforme requisito do desafio...")
+        print("Gerando pedido aleatório conforme requisito do desafio...")
         
         # Tentativa 1: POST /pedido (dados vazios para gerar aleatório)
         response = api_client.session.post(
@@ -250,7 +250,7 @@ def gerar_pedido_aleatorio_api(api_client: CallbackAPIClient) -> str:
             resultado = response.json()
             pedido_id = resultado.get('id')
             if pedido_id:
-                print(f"✅ Pedido aleatório gerado: {pedido_id}")
+                print(f"Pedido aleatório gerado: {pedido_id}")
                 return str(pedido_id)
         
         # Tentativa 2: Outros endpoints possíveis
@@ -269,16 +269,16 @@ def gerar_pedido_aleatorio_api(api_client: CallbackAPIClient) -> str:
                     resultado = response.json()
                     pedido_id = resultado.get('id') or resultado.get('pedido_id')
                     if pedido_id:
-                        print(f"✅ Pedido aleatório gerado via {endpoint}: {pedido_id}")
+                        print(f"Pedido aleatório gerado via {endpoint}: {pedido_id}")
                         return str(pedido_id)
             except:
                 continue
         
-        print("❌ Falha ao gerar pedido aleatório")
+        print("Falha ao gerar pedido aleatório")
         return ""
             
     except Exception as e:
-        print(f"❌ Erro ao gerar pedido aleatório: {e}")
+        print(f"Erro ao gerar pedido aleatório: {e}")
         return ""
 
 
@@ -296,7 +296,7 @@ def fazer_patch_pedido(api_client: CallbackAPIClient, pedido_id: str, callback_d
         bool: True se sucesso
     """
     try:
-        print(f"🎯 Fazendo PATCH /pedido/{pedido_id} conforme requisito...")
+        print(f"Fazendo PATCH /pedido/{pedido_id} conforme requisito...")
         
         response = api_client.session.patch(
             f"{api_client.base_url}/pedido/{pedido_id}",
@@ -309,12 +309,13 @@ def fazer_patch_pedido(api_client: CallbackAPIClient, pedido_id: str, callback_d
         print(f"Response: {response.text}")
         
         if response.status_code in [200, 201, 204]:
-            print(f"✅ PATCH enviado com sucesso!")
+            print(f"PATCH enviado com sucesso!")
             return True
         else:
-            print(f"❌ PATCH falhou: HTTP {response.status_code}")
+            print(f"PATCH falhou: HTTP {response.status_code}")
             return False
             
     except Exception as e:
-        print(f"❌ Erro no PATCH: {e}")
+        print(f"Erro no PATCH: {e}")
         return False
+

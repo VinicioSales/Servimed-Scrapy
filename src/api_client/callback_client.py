@@ -141,19 +141,19 @@ class CallbackAPIClient:
             
             if response.status_code == 201:
                 result = response.json()
-                print(f"✅ Produtos enviados com sucesso! {len(result)} produtos processados.")
+                print(f"Produtos enviados com sucesso! {len(result)} produtos processados.")
                 return True
             elif response.status_code == 401:
-                print(f"❌ ERRO DE AUTENTICAÇÃO: Token inválido ou expirado!")
+                print(f"ERRO DE AUTENTICAÇÃO: Token inválido ou expirado!")
                 print(f"Resposta: {response.text}")
                 return False
             else:
-                print(f"❌ Erro ao enviar produtos: {response.status_code}")
+                print(f"Erro ao enviar produtos: {response.status_code}")
                 print(f"Resposta: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Erro ao enviar produtos: {e}")
+            print(f"Erro ao enviar produtos: {e}")
             return False
     
     def test_connection(self) -> bool:

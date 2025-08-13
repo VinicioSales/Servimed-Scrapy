@@ -10,7 +10,7 @@ from pathlib import Path
 def run_command(command, description):
     """Executa um comando e exibe o resultado"""
     print(f"\n{'='*60}")
-    print(f"🧪 {description}")
+    print(f"{description}")
     print(f"{'='*60}")
     print(f"Comando: {command}")
     print("-" * 60)
@@ -42,14 +42,14 @@ def run_command(command, description):
 
 def main():
     """Função principal para executar testes"""
-    print("🚀 Iniciando execução dos testes automatizados")
+    print("Iniciando execução dos testes automatizados")
     print(f"Diretório atual: {os.getcwd()}")
     
     # Verificar se pytest está instalado
-    print("\n📋 Verificando instalação do pytest...")
+    print("\nVerificando instalação do pytest...")
     if not run_command("python -m pytest --version", "Verificação do pytest"):
-        print("❌ Pytest não está instalado ou não está funcionando")
-        print("💡 Execute: pip install pytest")
+        print("Pytest não está instalado ou não está funcionando")
+        print("Execute: pip install pytest")
         return False
     
     # Lista de comandos de teste
@@ -85,13 +85,13 @@ def main():
         success = run_command(command, description)
         if success:
             success_count += 1
-            print("✅ Sucesso")
+            print("Sucesso")
         else:
-            print("❌ Falhou")
+            print("Falhou")
     
     # Resumo final
     print(f"\n{'='*60}")
-    print(f"📊 RESUMO FINAL")
+    print(f"RESUMO FINAL")
     print(f"{'='*60}")
     print(f"Comandos executados: {total_count}")
     print(f"Sucessos: {success_count}")
@@ -99,10 +99,10 @@ def main():
     print(f"Taxa de sucesso: {(success_count/total_count)*100:.1f}%")
     
     if success_count == total_count:
-        print("🎉 Todos os testes foram executados com sucesso!")
+        print("Todos os testes foram executados com sucesso!")
         return True
     else:
-        print("⚠️  Alguns testes falharam. Verifique os logs acima.")
+        print("Alguns testes falharam. Verifique os logs acima.")
         return False
 
 
@@ -115,7 +115,7 @@ def run_specific_test(test_path=""):
         command = f"python -m pytest {test_path} -v -s"
         return run_command(command, f"Teste específico: {test_path}")
     else:
-        print("❌ Caminho do teste não fornecido")
+        print("Caminho do teste não fornecido")
         return False
 
 
@@ -129,26 +129,26 @@ def install_test_dependencies():
         "pytest-timeout>=2.1.0"
     ]
     
-    print("📦 Instalando dependências de teste...")
+    print("Instalando dependências de teste...")
     
     for dep in dependencies:
         command = f"pip install {dep}"
         success = run_command(command, f"Instalando {dep}")
         if not success:
-            print(f"❌ Falha ao instalar {dep}")
+            print(f"Falha ao instalar {dep}")
             return False
     
-    print("✅ Todas as dependências foram instaladas com sucesso!")
+    print("Todas as dependências foram instaladas com sucesso!")
     return True
 
 
 if __name__ == "__main__":
-    print("🧪 PYTEST RUNNER - Sistema de Testes Automatizados")
+    print("PYTEST RUNNER - Sistema de Testes Automatizados")
     print("=" * 60)
     
     # Menu de opções
     while True:
-        print("\n🔧 Opções:")
+        print("\nOpções:")
         print("1. Executar todos os testes")
         print("2. Executar teste específico")
         print("3. Instalar dependências de teste")
@@ -171,10 +171,10 @@ if __name__ == "__main__":
             run_command("python -m pytest tests/ --collect-only", "Coleta de testes")
         
         elif choice == "5":
-            print("👋 Saindo...")
+            print("Saindo...")
             break
         
         else:
-            print("❌ Opção inválida. Tente novamente.")
+            print("Opção inválida. Tente novamente.")
     
-    print("\n🏁 Execução finalizada.")
+    print("\nExecução finalizada.")

@@ -42,15 +42,25 @@ class TestMainSimple:
     def test_executar_nivel_2_basic(self):
         """Testa função executar_nivel_2 básica"""
         args = Mock()
-        args.worker_status = True
+        args.status = "test-task-id"
+        args.worker_status = False
+        args.direct = False
         
         with patch('src.nivel2.queue_client.TaskQueueClient') as mock_client:
             mock_instance = Mock()
-            mock_instance.get_worker_status.return_value = {'workers': 0}
+            # Retornar um dicionário serializável ao invés de Mock
+            mock_instance.get_task_status.return_value = {
+                'task_id': 'test-task-id',
+                'status': 'PENDING',
+                'ready': False,
+                'result': None
+            }
             mock_client.return_value = mock_instance
             
             result = main.executar_nivel_2(args)
             assert result is not None
+            assert isinstance(result, dict)
+            assert 'task_id' in result
     
     def test_executar_nivel_3_basic(self):
         """Testa função executar_nivel_3 básica"""

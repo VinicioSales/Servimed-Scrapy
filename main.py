@@ -111,8 +111,27 @@ def executar_nivel_2(args):
     
     client = TaskQueueClient()
     
-    if args.enqueue:
-        # Enfileirar nova tarefa
+    if args.status:
+        # Verificar status de tarefa
+        print(f"Verificando status da tarefa: {args.status}")
+        status = client.get_task_status(args.status)
+        print(json.dumps(status, indent=2, ensure_ascii=False))
+        return status
+    
+    elif args.worker_status:
+        # Status dos workers
+        print("Status dos workers:")
+        status = client.get_worker_status()
+        print(json.dumps(status, indent=2, ensure_ascii=False))
+        return status
+    
+    elif args.direct:
+        # MODO DIRETO (opcional) - sem filas
+        print("MODO DIRETO SOLICITADO - executando Scrapy sem filas")
+        return executar_nivel_1(args)
+    
+    else:
+        # PADRÃO: Enfileirar tarefa (comportamento padrão)
         print("Enfileirando nova tarefa de scraping com Scrapy...")
         
         # Credenciais do .env ou argumentos
@@ -138,27 +157,6 @@ def executar_nivel_2(args):
         print(f"Tarefa Scrapy enfileirada com ID: {task_id}")
         print(f"Use --status {task_id} para acompanhar o progresso")
         return {"task_id": task_id, "framework": "scrapy"}
-    
-    elif args.status:
-        # Verificar status de tarefa
-        print(f"Verificando status da tarefa: {args.status}")
-        status = client.get_task_status(args.status)
-        print(json.dumps(status, indent=2, ensure_ascii=False))
-        return status
-    
-    elif args.worker_status:
-        # Status dos workers
-        print("Status dos workers:")
-        status = client.get_worker_status()
-        print(json.dumps(status, indent=2, ensure_ascii=False))
-        return status
-    
-    else:
-        print("Para Nivel 2, use uma das opcoes:")
-        print("  --enqueue          : Enfileira nova tarefa")
-        print("  --status TASK_ID   : Verifica status de tarefa")
-        print("  --worker-status    : Status dos workers")
-        return None
 
 
 def executar_nivel_3(args):
@@ -275,19 +273,20 @@ NIVEL 1 - Execução Direta com Scrapy:
   python main.py --nivel 1 --filtro "paracetamol"     # Filtrar por termo
   python main.py --nivel 1 --max-pages 10             # Limitar páginas
 
-NIVEL 2 - Sistema de Filas com Scrapy:
-  python main.py --nivel 2 --enqueue                  # Enfileira tarefa
-  python main.py --nivel 2 --enqueue --filtro "dipirona" --max-pages 5
+NIVEL 2 - Sistema de Filas com Scrapy (PADRÃO: usa filas):
+  python main.py --nivel 2                            # Enfileira tarefa (padrão)
+  python main.py --nivel 2 --filtro "dipirona" --max-pages 5
   python main.py --nivel 2 --status TASK_ID           # Status da tarefa
   python main.py --nivel 2 --worker-status            # Status dos workers
+  python main.py --nivel 2 --direct                   # Modo direto (sem filas)
 
-NIVEL 3 - Sistema de Pedidos com Scrapy:
+NIVEL 3 - Sistema de Pedidos com Scrapy (PADRÃO: usa filas):
   python main.py --nivel 3 --test                     # Teste do sistema
-  python main.py --nivel 3 --codigo-produto 444212    # Pedido simples
+  python main.py --nivel 3 --codigo-produto 444212    # Pedido simples (padrão)
   python main.py --nivel 3 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493
   python main.py --nivel 3 --status TASK_ID           # Status do pedido
 
-Pré-requisitos para Nível 2:
+Pré-requisitos para Níveis 2 e 3:
   - Redis rodando (redis-server)
   - Worker Celery ativo (celery -A src.nivel2.celery_app worker --loglevel=info)
         """
@@ -317,17 +316,17 @@ Pré-requisitos para Nível 2:
         help='Numero maximo de paginas para processar (padrao: sem limite)'
     )
     
-    # Argumentos do Nível 2 (filas)
+    # Argumentos do Nível 2 (filas) - PADRÃO: usar filas
     parser.add_argument(
-        '--enqueue',
+        '--direct',
         action='store_true',
-        help='[Nivel 2] Enfileira nova tarefa de scraping'
+        help='[Nivel 2] Executa modo direto (sem filas) - opcional'
     )
     
     parser.add_argument(
         '--status',
         type=str,
-        help='[Nivel 2] Verifica status de uma tarefa pelo ID'
+        help='[Nivel 2/3] Verifica status de uma tarefa pelo ID'
     )
     
     parser.add_argument(
