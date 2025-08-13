@@ -44,7 +44,13 @@ AUTOTHROTTLE_MAX_DELAY = 60
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 
 # Configurações de segurança
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0'
+
+# DOWNLOAD HANDLER CUSTOMIZADO PARA CONTORNAR ANTI-BOT
+DOWNLOAD_HANDLERS = {
+    'http': 'src.scrapy_servimed.handlers.AntiDetectionDownloadHandler',
+    'https': 'src.scrapy_servimed.handlers.AntiDetectionDownloadHandler',
+}
 
 # Logs
 LOG_LEVEL = 'INFO'

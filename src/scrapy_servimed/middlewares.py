@@ -1,8 +1,16 @@
 """
 MIDDLEWARES - SCRAPY SERVIMED
-============================
-
-Middlewares para autenticação e sessão.
+=====================        # Cookies - incluindo todos os cookies capturados do DevTools
+        # Cookies devem conter os JWTs completos conforme DevTools
+        request.cookies.update({
+            'accesstoken': self.access_token_jwt,  # JWT completo do accesstoken
+            'sessiontoken': self.session_token,   # JWT completo do sessiontoken
+            '_ga': 'GA1.1.1496905904.1755017918',
+            '_ga_0684EZD6WN': 'GS2.1.s1755087487$o8$g1$t1755089675$j38$l0$h0',
+            '_ga_TGSHLZ7V8G': 'GS2.3.s1755018324$o1$g1$t1755018332$j52$l0$h0',
+            '_gat': '1',
+            '_gid': 'GA1.3.808374586.1755017918'
+        })Middlewares para autenticação e sessão.
 """
 
 import os
@@ -26,6 +34,7 @@ class OAuth2AuthMiddleware:
     
     def __init__(self):
         self.access_token = os.getenv('ACCESS_TOKEN')
+        self.access_token_jwt = os.getenv('ACCESS_TOKEN_JWT')
         self.session_token = os.getenv('SESSION_TOKEN')
         self.logged_user = os.getenv('LOGGED_USER')
         self.client_id = os.getenv('CLIENT_ID')
@@ -41,23 +50,38 @@ class OAuth2AuthMiddleware:
     def process_request(self, request, spider):
         """Adiciona headers de autenticação em todas as requisições"""
         
-        # Headers OAuth2
+        # Headers EXATAMENTE como no exemplo cURL funcionando
         request.headers.update({
-            'accesstoken': self.access_token,
-            'loggeduser': self.logged_user,
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0',  # Firefox do exemplo!
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
             'x-cart': self.x_cart,
             'x-peperone': str(int(time.time() * 1000)),
-            'contenttype': 'application/json',
-            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json',
+            'contentType': 'application/json',  # Lowercase 'T' como no exemplo!
+            'loggedUser': self.logged_user,
+            'accesstoken': self.access_token,  # UUID nos headers
             'Origin': 'https://pedidoeletronico.servimed.com.br',
+            'Connection': 'keep-alive',
             'Referer': 'https://pedidoeletronico.servimed.com.br/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
+            'TE': 'trailers'
         })
         
-        # Cookies
+        # Cookies - JWTs completos como no exemplo
         request.cookies.update({
-            'accesstoken': self.access_token,
-            'sessiontoken': self.session_token
+            'sessiontoken': self.session_token,   # JWT completo nos cookies
+            'accesstoken': self.access_token_jwt, # JWT completo nos cookies
+            '_ga': 'GA1.1.1496905904.1755017918',
+            '_ga_0684EZD6WN': 'GS2.1.s1755087487$o8$g1$t1755089675$j38$l0$h0',
+            '_ga_TGSHLZ7V8G': 'GS2.3.s1755018324$o1$g1$t1755018332$j52$l0$h0',
+            '_gat': '1',
+            '_gid': 'GA1.3.808374586.1755017918'
         })
         
         return None

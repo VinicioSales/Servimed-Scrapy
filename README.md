@@ -233,23 +233,27 @@ python main.py --nivel 3
 
 ### 📋 Dependências Principais
 ```txt
-# Framework de Scraping
-scrapy>=2.13.3
+# === CORE (obrigatórias) ===
+scrapy>=2.11.0              # Framework de scraping principal
+twisted>=22.10.0             # Engine assíncrono do Scrapy
+itemadapter>=0.7.0           # Adaptador de items do Scrapy
+requests>=2.31.0             # HTTP requests
+urllib3>=2.0.0               # HTTP client base
+python-dotenv>=1.0.0         # Variáveis de ambiente
 
-# Sistema de Filas
-celery>=5.3.4
-redis>=5.0.1
+# === NÍVEL 2 (Sistema de Filas) ===
+celery>=5.3.0                # Framework de filas distribuídas
+redis>=5.0.0                 # Broker de mensagens
+kombu>=5.3.0                 # Biblioteca de messaging do Celery
 
-# Testes Automatizados
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-pytest-mock>=3.11.0
+# === DESENVOLVIMENTO ===
+pytest>=7.4.0                # Framework de testes
+pytest-asyncio>=0.21.0       # Suporte async para pytest
+pytest-cov>=4.1.0            # Coverage de código
+pytest-mock>=3.11.0          # Mock fixtures
 
-# Utilitários
-requests>=2.31.0
-python-dotenv>=1.0.0
-lxml>=4.9.3
+# === OPCIONAIS ===
+flower>=2.0.0                 # Monitoramento Celery (web UI)
 ```
 
 ### 🔧 Instalação

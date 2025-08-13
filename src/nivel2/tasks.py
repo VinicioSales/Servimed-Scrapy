@@ -30,6 +30,7 @@ def processar_scraping_simple(self, task_data):
     """
     Versão simplificada da tarefa de scraping com suporte a Scrapy
     """
+    start_time = time.time()
     try:
         task_id = self.request.id
         print(f"[{task_id}] Iniciando processamento...")
@@ -105,7 +106,6 @@ def processar_scraping_simple(self, task_data):
         print(f"[{task_id}] Enviando produtos para API...")
         
         # Ler arquivo de produtos gerado
-        arquivo_produtos = resultado_scraping['arquivo_salvo']
         with open(arquivo_produtos, 'r', encoding='utf-8') as f:
             dados_completos = json.load(f)
         
@@ -120,11 +120,12 @@ def processar_scraping_simple(self, task_data):
             'status': 'success',
             'task_id': task_id,
             'produtos_coletados': produtos_coletados,
-            'tempo_scraping': resultado_scraping['tempo_execucao'],
+            'tempo_scraping': time.time() - start_time,
             'arquivo_local': arquivo_produtos,
             'api_response': api_response,
             'callback_url': callback_url,
             'filtro_usado': filtro,
+            'framework_usado': framework,
             'timestamp': time.time()
         }
         

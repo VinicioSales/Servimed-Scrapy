@@ -115,16 +115,19 @@ class CallbackAPIClient:
             return False
         
         try:
+            # Converter produtos para formato da API
             api_products = []
             for produto in products:
                 api_product = {
-                    "gtin": str(produto.get('gtin_ean', '')),
+                    "gtin": str(produto.get('gtin', produto.get('gtin_ean', ''))),
                     "codigo": str(produto.get('codigo', '')),
                     "descricao": str(produto.get('descricao', '')),
                     "preco_fabrica": float(produto.get('preco_fabrica', 0.0)),
                     "estoque": int(produto.get('estoque', 0))
                 }
                 api_products.append(api_product)
+            
+            print(f"Enviando {len(api_products)} produtos para {self.base_url}/produto")
             
             response = self.session.post(
                 f"{self.base_url}/produto",
@@ -138,19 +141,19 @@ class CallbackAPIClient:
             
             if response.status_code == 201:
                 result = response.json()
-                print(f"Produtos enviados com sucesso! {len(result)} produtos processados.")
+                print(f"✅ Produtos enviados com sucesso! {len(result)} produtos processados.")
                 return True
             elif response.status_code == 401:
-                print(f"ERRO DE AUTENTICAÇÃO: Token inválido ou expirado!")
+                print(f"❌ ERRO DE AUTENTICAÇÃO: Token inválido ou expirado!")
                 print(f"Resposta: {response.text}")
                 return False
             else:
-                print(f"Erro ao enviar produtos: {response.status_code}")
+                print(f"❌ Erro ao enviar produtos: {response.status_code}")
                 print(f"Resposta: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"Erro ao enviar produtos: {e}")
+            print(f"❌ Erro ao enviar produtos: {e}")
             return False
     
     def test_connection(self) -> bool:

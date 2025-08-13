@@ -1,6 +1,8 @@
 # GITIGNORE - SERVIMED SCRAPER
 # ============================
 
+venv/
+
 # Arquivos com dados sensíveis
 .env
 

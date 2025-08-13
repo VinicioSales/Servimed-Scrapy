@@ -135,7 +135,7 @@ def executar_nivel_2(args):
         # Credenciais do .env ou argumentos
         usuario = args.usuario or os.getenv('CALLBACK_API_USER')
         senha = args.senha or os.getenv('CALLBACK_API_PASSWORD')
-        callback_url = args.callback_url or os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
+        callback_url = os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
         
         if not usuario or not senha:
             print("ERRO: Credenciais não encontradas")
