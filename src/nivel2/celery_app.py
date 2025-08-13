@@ -38,7 +38,7 @@ app = Celery(
     'servimed_scraper_simple',
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['src.nivel2.tasks']  # Usar tasks
+    include=['src.nivel2.tasks', 'src.nivel3.tasks']  # Incluir tasks dos níveis 2 e 3
 )
 
 # Configurações otimizadas para Windows

@@ -17,7 +17,17 @@ if str(src_dir) not in sys.path:
 from celery import Celery
 
 # Configuração Redis
-REDIS_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+import os
+import json
+import time
+from celery import Celery
+from dotenv import load_dotenv
+
+# Carregar variáveis do .env
+load_dotenv()
+
+# Configurações
+REDIS_URL = "redis://localhost:6379/0"
 
 # Criar app Celery
 app = Celery(
@@ -29,10 +39,21 @@ app = Celery(
 
 def enqueue_scraping(filtro="", max_pages=1):
     """Enfileira tarefa de scraping"""
+    
+    # Obter credenciais do .env
+    usuario = os.getenv('CALLBACK_API_USER')
+    senha = os.getenv('CALLBACK_API_PASSWORD')
+    callback_url = os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
+    
+    if not usuario or not senha:
+        print("❌ Credenciais não encontradas no .env")
+        print("Configure CALLBACK_API_USER e CALLBACK_API_PASSWORD")
+        return None
+    
     task_data = {
-        "usuario": "juliano@farmaprevonline.com.br",
-        "senha": "a007299A", 
-        "callback_url": "https://desafio.cotefacil.net",
+        "usuario": usuario,
+        "senha": senha, 
+        "callback_url": callback_url,
         "filtro": filtro,
         "max_pages": max_pages
     }

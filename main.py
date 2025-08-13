@@ -20,6 +20,7 @@ import argparse
 import sys
 import json
 import time
+import os
 from pathlib import Path
 
 # Adiciona o diretório src ao path para importar os módulos
@@ -97,10 +98,16 @@ def executar_nivel_2(args):
         # Enfileirar nova tarefa
         print("Enfileirando nova tarefa de scraping...")
         
-        # Credenciais padrão (podem ser personalizadas)
-        usuario = args.usuario or "juliano@farmaprevonline.com.br"
-        senha = args.senha or "a007299A"
-        callback_url = args.callback_url or "https://desafio.cotefacil.net"
+        # Credenciais do .env ou argumentos
+        usuario = args.usuario or os.getenv('CALLBACK_API_USER')
+        senha = args.senha or os.getenv('CALLBACK_API_PASSWORD')
+        callback_url = args.callback_url or os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
+        
+        if not usuario or not senha:
+            print("❌ Credenciais não encontradas")
+            print("Forneça via argumentos --usuario/--senha ou configure no .env:")
+            print("CALLBACK_API_USER e CALLBACK_API_PASSWORD")
+            return
         
         task_id = client.enqueue_scraping_task(
             usuario=usuario,
@@ -165,9 +172,9 @@ Pré-requisitos para Nível 2:
     parser.add_argument(
         '--nivel', '-n',
         type=int,
-        choices=[1, 2],
+        choices=[1, 2, 3],
         default=1,
-        help='Nivel de execucao: 1=Direto, 2=Filas (padrao: 1)'
+        help='Nivel de execucao: 1=Direto, 2=Filas, 3=Pedidos (padrao: 1)'
     )
     
     # Argumentos do Nível 1 (originais)
@@ -232,6 +239,12 @@ Pré-requisitos para Nível 2:
         return executar_nivel_1(args)
     elif args.nivel == 2:
         return executar_nivel_2(args)
+    elif args.nivel == 3:
+        print("🎯 NÍVEL 3: Sistema de Pedidos")
+        print("Use: python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade>")
+        print("Para verificar: python pedido_queue_client.py status <task_id>")
+        print("Teste: python pedido_queue_client.py test")
+        return None
 
 
 if __name__ == "__main__":
