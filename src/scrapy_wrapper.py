@@ -126,37 +126,4 @@ class ScrapyServimedWrapper:
             return {'success': False, 'error': 'Arquivo não encontrado'}
 
 
-def test_scrapy_integration():
-    """Teste da integração Scrapy"""
-    
-    print("TESTE DE INTEGRAÇÃO SCRAPY")
-    print("=" * 50)
-    
-    wrapper = ScrapyServimedWrapper()
-    
-    # Teste com filtro específico
-    print("\nTestando spider com filtro...")
-    success = wrapper.run_spider(filtro='444212', max_pages=1)
-    
-    if success:
-        print("Spider executado com sucesso")
-        
-        # Verificar resultados
-        print("\nVerificando resultados...")
-        results = wrapper.get_results()
-        
-        if results['success']:
-            print(f"Resultados: {results['total']} produtos coletados")
-            
-            # Mostrar amostra
-            if results['produtos']:
-                produto = results['produtos'][0]
-                print(f"Exemplo: {produto.get('codigo')} - {produto.get('descricao', '')[:50]}...")
-        else:
-            print(f"Erro nos resultados: {results.get('error')}")
-    else:
-        print("Falha na execução do spider")
 
-
-if __name__ == "__main__":
-    test_scrapy_integration()

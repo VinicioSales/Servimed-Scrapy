@@ -67,7 +67,6 @@ class PedidoClient:
                 print("Tokens de autenticação incompletos no .env")
                 return False
             
-            # Configurar headers de autenticação
             self.session.headers.update({
                 'accesstoken': self.access_token,
                 'loggeduser': self.logged_user,

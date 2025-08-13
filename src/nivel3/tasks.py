@@ -295,13 +295,3 @@ def enviar_patch_pedido(api_client: CallbackAPIClient, id_pedido: str, callback_
     except Exception as e:
         print(f"Erro no callback: {e}")
         return False
-
-
-@app.task(name='src.nivel3.tasks.test_pedido_task')
-def test_pedido_task() -> Dict[str, Any]:
-    """Task de teste para o Nível 3"""
-    return {
-        'status': 'test_success',
-        'message': 'Nível 3 funcionando!',
-        'timestamp': time.time()
-    }

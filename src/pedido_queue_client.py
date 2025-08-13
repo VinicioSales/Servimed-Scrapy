@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Adicionar src ao path
-project_root = os.path.dirname(__file__)  # Já estamos na pasta src
+project_root = os.path.dirname(__file__)
 sys.path.append(project_root)
 
 from nivel2.celery_app import app

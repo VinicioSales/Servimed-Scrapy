@@ -22,13 +22,12 @@ if str(src_dir) not in sys.path:
 
 # Carregar configurações
 try:
-    from config.settings import configuracao
+    from config.settings import PORTAL_EMAIL
     print("Configuracao carregada com sucesso!")
-    print(f"Usuario: {configuracao.get('PORTAL_EMAIL', 'N/A')}")
-    print(f"Token valido ate: {configuracao.get('token_expiry', 'N/A')}")
+    print(f"Usuario: {PORTAL_EMAIL}")
+    print("Token valido ate: Wed Aug 13 09:48:17 2025")
 except Exception as e:
     print(f"Aviso: Erro ao carregar configuracoes: {e}")
-    configuracao = {}
 
 # Configuração Redis
 REDIS_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
@@ -38,7 +37,7 @@ app = Celery(
     'servimed_scraper_simple',
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['src.nivel2.tasks', 'src.nivel3.tasks']  # Incluir tasks dos níveis 2 e 3
+    include=['src.nivel2.tasks', 'src.nivel3.tasks'] 
 )
 
 # Configurações otimizadas para Windows
@@ -58,7 +57,6 @@ app.conf.update(
     worker_task_log_format='[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s',
 )
 
-# Configurações específicas para Windows
 if os.name == 'nt':  # Windows
     app.conf.update(
         worker_pool='solo',

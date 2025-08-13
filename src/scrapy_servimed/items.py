@@ -21,13 +21,3 @@ class ProdutoItem(scrapy.Item):
     url = scrapy.Field()
     timestamp = scrapy.Field()
     usuario = scrapy.Field()
-
-
-class PedidoItem(scrapy.Item):
-    """Item para pedidos do Servimed"""
-    id_pedido = scrapy.Field()
-    produtos = scrapy.Field()
-    codigo_confirmacao = scrapy.Field()
-    status = scrapy.Field()
-    timestamp = scrapy.Field()
-    usuario = scrapy.Field()

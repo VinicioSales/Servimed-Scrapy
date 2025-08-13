@@ -37,7 +37,6 @@ class CallbackAPIClient:
         Returns:
             bool: True se autenticado com sucesso
         """
-        # Usar dados do .env se não fornecidos
         username = username or os.getenv('PORTAL_EMAIL')
         password = password or os.getenv('PORTAL_PASSWORD')
         client_id = client_id or os.getenv('CLIENT_ID')
@@ -116,7 +115,6 @@ class CallbackAPIClient:
             return False
         
         try:
-            # Converte produtos para o formato da API
             api_products = []
             for produto in products:
                 api_product = {

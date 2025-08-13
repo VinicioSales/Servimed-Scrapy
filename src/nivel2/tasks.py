@@ -25,24 +25,6 @@ if str(src_dir) not in sys.path:
 from src.nivel2.celery_app import app
 
 
-@app.task(bind=True)
-def test_connection_task_simple(self):
-    """Tarefa de teste simples"""
-    try:
-        return {
-            'status': 'success',
-            'message': 'Worker funcionando',
-            'task_id': self.request.id,
-            'timestamp': time.time()
-        }
-    except Exception as e:
-        return {
-            'status': 'error',
-            'message': str(e),
-            'task_id': self.request.id
-        }
-
-
 @app.task(bind=True, autoretry_for=(Exception,), retry_kwargs={'max_retries': 2, 'countdown': 30})
 def processar_scraping_simple(self, task_data):
     """
@@ -181,7 +163,6 @@ def status_task_simple(self, message="Status check"):
 
 
 # Registrar tarefas no app
-app.tasks.register(test_connection_task_simple)
 app.tasks.register(processar_scraping_simple)
 app.tasks.register(status_task_simple)
 

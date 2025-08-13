@@ -1,0 +1,72 @@
+[tool.pytest.ini_options]
+# Diretórios de teste
+testpaths = ["tests"]
+
+# Padrões de arquivos de teste
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Opções de execução
+addopts = [
+    "-v",                    # Verbose
+    "--tb=short",           # Traceback curto
+    "--strict-markers",     # Markers estritos
+    "--disable-warnings",   # Desabilitar warnings
+    "--color=yes",          # Colorir output
+    "-ra",                  # Mostrar resumo de todos os testes
+]
+
+# Markers customizados
+markers = [
+    "unit: Testes unitários",
+    "integration: Testes de integração",
+    "slow: Testes lentos que podem ser pulados",
+    "network: Testes que requerem rede",
+    "redis: Testes que requerem Redis",
+    "celery: Testes que requerem Celery",
+]
+
+# Diretórios a ignorar
+norecursedirs = [
+    "*.egg",
+    ".eggs",
+    "dist",
+    "build",
+    "south_migrations",
+    ".tox",
+    ".git",
+    "__pycache__",
+]
+
+# Timeout para testes longos (segundos)
+timeout = 300
+
+# Cobertura de código
+[tool.coverage.run]
+source = ["src", "main.py"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/virtualenvs/*",
+    "*/.venv/*",
+    "*/site-packages/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+show_missing = true
+precision = 2
