@@ -1,2 +1,36 @@
-venv/
+# GITIGNORE - SERVIMED SCRAPER
+# ============================
+
+# Arquivos com dados sensíveis
 .env
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de dados coletados (opcional)
+*.json
+backup_*.json
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Arquivos específicos do sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de backup
+*.bak
+*~
