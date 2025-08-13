@@ -265,9 +265,9 @@ Pré-requisitos para Nível 2:
         return executar_nivel_2(args)
     elif args.nivel == 3:
         print("NÍVEL 3: Sistema de Pedidos")
-        print("Use: python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
-        print("Para verificar: python pedido_queue_client.py status <task_id>")
-        print("Teste: python pedido_queue_client.py test")
+        print("Use: python src/pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
+        print("Para verificar: python src/pedido_queue_client.py status <task_id>")
+        print("Teste: python src/pedido_queue_client.py test")
         print("")
         print("O Nível 3 sempre usa Scrapy automaticamente.")
         return None

@@ -1,185 +1,210 @@
-# 🕷️ Servimed Scraper - Sistema Completo com Scrapy
+# Servimed Scraper
 
-Sistema completo de scraping do portal Servimed com três níveis de execução, sempre utilizando **Scrapy** como framework principal.
-
-## 📋 Visão Geral
-
-- **Nível 1**: Execução direta (síncrona)
-- **Nível 2**: Sistema de filas com Celery (assíncrona)
-- **Nível 3**: Sistema completo de pedidos
-
-## 🚀 Instalação
-
-### 1. Dependências
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Configuração
-Copie o arquivo `.env.example` para `.env` e configure suas credenciais:
-```bash
-cp .env.example .env
-```
-
-Edite o arquivo `.env` com suas credenciais do Servimed.
-
-### 3. Redis (para Níveis 2 e 3)
-```bash
-# Windows - usando Redis portable
-redis_start.bat
-
-# Linux/Mac
-redis-server
-```
-
-## 🎯 Como Usar
-
-### **Nível 1 - Execução Direta**
-```bash
-# Executar scraping direto
-python main.py --nivel 1
-
-# Com filtro
-python main.py --nivel 1 --filtro "paracetamol"
-
-# Limitando páginas
-python main.py --nivel 1 --filtro "vitamina" --max-pages 5
-```
-
-### **Nível 2 - Sistema de Filas**
-```bash
-# 1. Iniciar worker Celery
-start_worker.bat
-
-# 2. Enfileirar tarefa
-python main.py --nivel 2 --enqueue --filtro "dipirona"
-
-# 3. Verificar status
-python main.py --nivel 2 --status <task_id>
-```
-
-### **Nível 3 - Sistema de Pedidos**
-```bash
-# 1. Iniciar worker Celery
-start_worker.bat
-
-# 2. Teste de pedido
-python pedido_queue_client.py test
-
-# 3. Pedido personalizado
-python pedido_queue_client.py enqueue PEDIDO123 444212 2
-
-# 4. Verificar status
-python pedido_queue_client.py status <task_id>
-```
+Sistema completo de scraping e pedidos para o portal Servimed, desenvolvido com Scrapy framework.
 
 ## 📁 Estrutura do Projeto
 
 ```
-├── main.py                     # Script principal
-├── pedido_queue_client.py      # Cliente para pedidos (Nível 3)
-├── requirements.txt            # Dependências Python
-├── .env                       # Configurações (criar a partir do .example)
-├── start_worker.bat           # Script para iniciar worker Celery
-├── redis_start.bat            # Script para iniciar Redis
-├── src/
-│   ├── scrapy_servimed/       # Projeto Scrapy
-│   ├── scrapy_wrapper.py      # Wrapper do Scrapy
-│   ├── servimed_scraper/      # Framework original (fallback)
-│   ├── nivel2/               # Sistema de filas
-│   │   ├── celery_app.py     # Configuração Celery
-│   │   ├── tasks.py          # Tarefas assíncronas
-│   │   └── queue_client.py   # Cliente de filas
-│   ├── nivel3/               # Sistema de pedidos
-│   │   ├── tasks.py          # Tarefas de pedidos
-│   │   └── pedido_client.py  # Cliente de pedidos
-│   └── api_client/           # Cliente para APIs externas
-└── data/                     # Arquivos de saída
+servimed-scraper/
+├── main.py                       # Script principal - 3 níveis
+├── pedido_queue_client.py        # Cliente de pedidos (nível 3)
+├── queue_client.py               # Cliente de filas (nível 2)
+├── scrapy.cfg                    # Configuração do Scrapy
+├── requirements.txt              # Dependências Python
+├── .env                          # Variáveis de ambiente (não versionado)
+├── .env.example                  # Exemplo de configuração
+│
+├── src/                          # Código fonte principal
+│   ├── scrapy_wrapper.py         # Wrapper para Scrapy
+│   ├── api_client/               # Clientes de API
+│   ├── nivel2/                   # Sistema de filas (Celery)
+│   ├── nivel3/                   # Sistema de pedidos
+│   ├── scrapy_servimed/          # Spiders Scrapy
+│   └── servimed_scraper/         # Scraper original
+│
+├── config/                       # Configurações
+├── data/                         # Dados coletados
+├── docs/                         # Documentação
+├── logs/                         # Arquivos de log
+├── scripts/                      # Scripts auxiliares
+├── tests/                        # Testes automatizados
+└── tools/                        # Ferramentas auxiliares
+```
+│   ├── pedido_queue_client.py    # Cliente de pedidos (Nível 3)
+│   └── queue_client.py           # Cliente de filas (Nível 2)
+├── src/                          # Código fonte do sistema
+│   ├── api_client/               # Clientes para APIs externas
+│   ├── nivel2/                   # Sistema de filas (Celery/Redis)
+│   ├── nivel3/                   # Sistema de pedidos
+│   ├── scrapy_servimed/          # Spiders do Scrapy
+│   └── scrapy_wrapper.py         # Wrapper do Scrapy
+├── scripts/                      # Scripts de utilitários
+│   ├── start_worker.bat          # Inicia worker Celery
+│   └── redis_start.bat           # Inicia Redis
+├── tools/                        # Ferramentas auxiliares
+│   └── redis-portable/           # Redis portável
+├── config/                       # Configurações do sistema
+├── data/                         # Dados gerados pelo scraping
+├── docs/                         # Documentação
+├── logs/                         # Logs do sistema
+├── tests/                        # Testes unitários
+├── servimed.bat                  # Executável principal (Windows)
+├── pedidos.bat                   # Executável de pedidos (Windows)
+├── .env                          # Variáveis de ambiente
+├── requirements.txt              # Dependências Python
+└── README.md                     # Este arquivo
 ```
 
-## 🕷️ Framework Scrapy
+## 🚀 Instalação
 
-O sistema **sempre usa Scrapy** como framework principal:
+1. **Clone o repositório:**
+   ```bash
+   git clone <url-do-repositorio>
+   cd servimed-scraper
+   ```
 
-- ✅ **Performance superior**
-- ✅ **Melhor gestão de recursos**
-- ✅ **Logs detalhados**
-- ✅ **Fallback automático** para framework original em caso de erro
+2. **Instale as dependências:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## 🔧 Configurações Importantes
+3. **Configure o ambiente:**
+   ```bash
+   cp .env.example .env
+   # Edite o .env com suas credenciais
+   ```
 
-### Credenciais (.env)
+## 🎯 Uso
+
+### Nível 1 - Execução Direta (Síncrona)
+
+Execução simples e direta do scraper:
+
+```bash
+# Executar scraping básico
+python main.py --nivel 1
+
+# Com filtro de produto
+python main.py --nivel 1 --filtro "paracetamol"
+
+# Limitando páginas
+python main.py --nivel 1 --max-pages 5
+```
+
+```bash
+# Windows
+servimed.bat --nivel 1 --filtro "paracetamol"
+
+# Linux/Mac  
+python bin/main.py --nivel 1 --filtro "paracetamol"
+```
+
+### Nível 2 - Sistema de Filas (Assíncrona)
+
+1. **Inicie o Redis:**
+   ```bash
+   scripts/redis_start.bat
+   ```
+
+2. **Inicie o Worker:**
+   ```bash
+   scripts/start_worker.bat
+   ```
+
+3. **Enfileire tarefas:**
+   ```bash
+   python bin/main.py --nivel 2 --enqueue --filtro "dipirona"
+   ```
+
+### Nível 3 - Sistema de Pedidos
+
+```bash
+# Teste do sistema
+pedidos.bat test
+
+# Criar pedido
+pedidos.bat enqueue PEDIDO001 444212 2
+
+# Verificar status
+pedidos.bat status <task_id>
+```
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente (.env)
+
 ```env
-# Portal Servimed
-PORTAL_EMAIL=seu_email@empresa.com.br
-PORTAL_PASSWORD=sua_senha
+# Autenticação Servimed
+SERVIMED_EMAIL=seu_email@exemplo.com
+SERVIMED_SENHA=sua_senha
 
-# API Callback
-CALLBACK_API_USER=seu_email@empresa.com.br
-CALLBACK_API_PASSWORD=sua_senha
+# API Cotefacil
+CALLBACK_API_USER=usuario_api
+CALLBACK_API_PASSWORD=senha_api
 CALLBACK_URL=https://desafio.cotefacil.net
+
+# Tokens de sessão (extraídos do navegador)
+ACCESS_TOKEN=seu_access_token
+SESSION_TOKEN=seu_session_token
+LOGGED_USER=seu_user_id
+CLIENT_ID=seu_client_id
+X_CART=seu_x_cart
 ```
 
-### Redis
-- **Porta**: 6379 (padrão)
-- **Database**: 0
-- **Necessário para**: Níveis 2 e 3
+## 🏗️ Arquitetura
 
-### Celery
-- **Broker**: Redis
-- **Pool**: solo (compatível com Windows)
-- **Workers**: Iniciar via `start_worker.bat`
+### Framework Único: Scrapy
+- Todos os níveis usam Scrapy automaticamente
+- Sistema otimizado e padronizado
+- Melhor performance e manutenibilidade
 
-## 📊 Arquivos de Saída
+### Níveis de Funcionamento:
 
-- `data/servimed_produtos_scrapy.json` - Produtos coletados pelo Scrapy
-- `data/servimed_backup.json` - Backup automático
-- Logs detalhados no console
+1. **Nível 1**: Execução direta com Scrapy
+2. **Nível 2**: Sistema de filas com Celery + Redis + Scrapy  
+3. **Nível 3**: Sistema completo de pedidos + Scrapy
 
-## 🛠️ Solução de Problemas
+### Componentes Principais:
 
-### Erro de Import
+- **Scrapy Spiders**: Coleta de dados do portal
+- **Celery Tasks**: Processamento assíncrono
+- **API Client**: Integração com APIs externas
+- **Queue System**: Gerenciamento de filas Redis
+
+## 📊 Dados Coletados
+
+Para cada produto:
+- GTIN (Código de barras)
+- Código interno
+- Descrição
+- Preço de fábrica
+- Estoque disponível
+
+Formatos de saída:
+- JSON estruturado
+- Logs detalhados
+- Relatórios de status
+
+## 🛠️ Desenvolvimento
+
+### Estrutura de Desenvolvimento:
 ```bash
-# Adicionar src ao PYTHONPATH
-export PYTHONPATH="${PYTHONPATH}:./src"  # Linux/Mac
-$env:PYTHONPATH += ";.\src"              # Windows PowerShell
+# Instalar em modo desenvolvimento
+pip install -e .
+
+# Executar testes
+python -m pytest tests/
+
+# Verificar qualidade do código
+flake8 src/
 ```
 
-### Redis não conecta
-```bash
-# Verificar se Redis está rodando
-redis-cli ping
-```
+### Contribuindo:
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Faça commit das mudanças
+4. Abra um Pull Request
 
-### Worker Celery não inicia
-```bash
-# Matar processos Python antigos
-taskkill /f /im python.exe  # Windows
-```
+## 📄 Licença
 
-## 📈 Performance
-
-- **Scrapy**: ~2-3 segundos por página
-- **Coleta**: 10-50 produtos por página
-- **Memory**: ~100MB em uso típico
-- **Concorrência**: Suporte a múltiplos workers
-
-## 🔐 Segurança
-
-- ✅ Credenciais em arquivo `.env` (não versionado)
-- ✅ Autenticação OAuth2 para APIs
-- ✅ Tokens com expiração automática
-- ✅ Logs sem dados sensíveis
-
-## 📝 Logs
-
-O sistema gera logs detalhados mostrando:
-- Framework utilizado (sempre Scrapy)
-- Produtos coletados
-- Tempo de execução
-- Status das tarefas
-- Erros e fallbacks
-
----
-
-**🕷️ Sistema 100% Scrapy - Framework moderno e eficiente! 🕷️**
+Este projeto está sob a licença MIT. Veja o arquivo LICENSE para detalhes.
