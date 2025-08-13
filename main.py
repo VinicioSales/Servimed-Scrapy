@@ -32,6 +32,7 @@ Sempre usa Scrapy framework em todos os níveis.
 import os
 import sys
 import json
+import time
 import argparse
 from pathlib import Path
 from dotenv import load_dotenv
@@ -178,6 +179,96 @@ def executar_nivel_2(args):
         return None
 
 
+def executar_nivel_3(args):
+    """Execução Nível 3 - Sistema de Pedidos"""
+    print("EXECUTANDO NIVEL 3 - SISTEMA DE PEDIDOS")
+    print("=" * 50)
+    print("USANDO FRAMEWORK SCRAPY")
+    print("=" * 50)
+    
+    try:
+        # Importar cliente de pedidos
+        sys.path.insert(0, 'src')
+        from pedido_queue_client import PedidoQueueClient
+        
+        client = PedidoQueueClient()
+        
+        if args.test:
+            # Teste do sistema - criar pedido de teste
+            print("Executando teste do sistema de pedidos...")
+            usuario = os.getenv('PORTAL_EMAIL')
+            senha = os.getenv('PORTAL_PASSWORD')
+            
+            # Criar pedido de teste
+            test_id = f"TEST{int(time.time())}"
+            produtos_teste = [{"gtin": "7898636193493", "codigo": "444212", "quantidade": 1}]
+            
+            task_id = client.enqueue_pedido(
+                usuario=usuario,
+                senha=senha,
+                id_pedido=test_id,
+                produtos=produtos_teste
+            )
+            
+            print(f"Teste criado com sucesso! Task ID: {task_id}")
+            print(f"ID Pedido: {test_id}")
+            return {"task_id": task_id, "tipo": "teste"}
+            
+        elif args.pedido and args.codigo_produto:
+            # Criar pedido específico
+            print(f"Criando pedido: {args.pedido}")
+            print(f"Produto: {args.codigo_produto} (Qtd: {args.quantidade})")
+            if args.gtin:
+                print(f"GTIN: {args.gtin}")
+            
+            usuario = os.getenv('PORTAL_EMAIL')
+            senha = os.getenv('PORTAL_PASSWORD')
+            
+            produtos = [{
+                "gtin": args.gtin or "",
+                "codigo": args.codigo_produto,
+                "quantidade": args.quantidade
+            }]
+            
+            task_id = client.enqueue_pedido(
+                usuario=usuario,
+                senha=senha,
+                id_pedido=args.pedido,
+                produtos=produtos
+            )
+            
+            print(f"Pedido enfileirado com sucesso! Task ID: {task_id}")
+            print(f"Use --status {task_id} para acompanhar")
+            return {"task_id": task_id, "pedido": args.pedido}
+            
+        elif args.status:
+            # Verificar status
+            print(f"Verificando status da tarefa: {args.status}")
+            status = client.get_status(args.status)
+            print(json.dumps(status, indent=2, ensure_ascii=False))
+            return status
+            
+        else:
+            print("Para Nivel 3, use uma das opcoes:")
+            print("  --test                    : Executa teste do sistema")
+            print("  --pedido ID --codigo-produto COD --quantidade QTD [--gtin GTIN]")
+            print("  --status TASK_ID          : Verifica status de pedido")
+            print("")
+            print("Exemplos:")
+            print("  python main.py --nivel 3 --test")
+            print("  python main.py --nivel 3 --pedido PED001 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493")
+            print("  python main.py --nivel 3 --status task_id")
+            return None
+            
+    except ImportError as e:
+        print(f"ERRO: Módulo de pedidos não encontrado: {e}")
+        print("Verifique se o arquivo src/pedido_queue_client.py existe")
+        return None
+    except Exception as e:
+        print(f"ERRO no Nível 3: {e}")
+        return None
+
+
 def main():
     """Função principal com suporte aos três níveis"""
     parser = argparse.ArgumentParser(
@@ -198,8 +289,9 @@ NIVEL 2 - Sistema de Filas com Scrapy:
   python main.py --nivel 2 --worker-status            # Status dos workers
 
 NIVEL 3 - Sistema de Pedidos com Scrapy:
-  python pedido_queue_client.py test                  # Teste de pedido
-  python pedido_queue_client.py enqueue <id> <codigo> <qtd>
+  python main.py --nivel 3 --test                     # Teste do sistema
+  python main.py --nivel 3 --pedido PED001 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493
+  python main.py --nivel 3 --status TASK_ID           # Status do pedido
 
 Pré-requisitos para Nível 2:
   - Redis rodando (redis-server)
@@ -262,6 +354,38 @@ Pré-requisitos para Nível 2:
         help='[Nivel 2] Senha para autenticacao na API (padrao: do .env)'
     )
     
+    # Argumentos do Nível 3 (pedidos)
+    parser.add_argument(
+        '--test',
+        action='store_true',
+        help='[Nivel 3] Executa teste do sistema de pedidos'
+    )
+    
+    parser.add_argument(
+        '--pedido',
+        type=str,
+        help='[Nivel 3] ID do pedido para criar'
+    )
+    
+    parser.add_argument(
+        '--codigo-produto',
+        type=str,
+        help='[Nivel 3] Codigo do produto para o pedido'
+    )
+    
+    parser.add_argument(
+        '--quantidade',
+        type=int,
+        default=1,
+        help='[Nivel 3] Quantidade do produto (padrao: 1)'
+    )
+    
+    parser.add_argument(
+        '--gtin',
+        type=str,
+        help='[Nivel 3] GTIN do produto (opcional)'
+    )
+    
     args = parser.parse_args()
     
     # Inicialização comum
@@ -276,13 +400,7 @@ Pré-requisitos para Nível 2:
     elif args.nivel == 2:
         return executar_nivel_2(args)
     elif args.nivel == 3:
-        print("NÍVEL 3: Sistema de Pedidos")
-        print("Use: python src/pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
-        print("Para verificar: python src/pedido_queue_client.py status <task_id>")
-        print("Teste: python src/pedido_queue_client.py test")
-        print("")
-        print("O Nível 3 sempre usa Scrapy automaticamente.")
-        return None
+        return executar_nivel_3(args)
 
 
 if __name__ == "__main__":

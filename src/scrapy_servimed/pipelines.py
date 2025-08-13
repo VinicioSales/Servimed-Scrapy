@@ -55,9 +55,7 @@ class ServimedPipeline:
         except (ValueError, TypeError) as e:
             logger.warning(f'Erro na conversão de tipos: {e}')
         
-        # Adicionar timestamp
-        adapter['timestamp'] = datetime.now().isoformat()
-        
+        # Não adicionar timestamp ou outros campos desnecessários
         # Adicionar à lista
         self.produtos.append(dict(adapter))
         self.items_processed += 1
@@ -76,10 +74,22 @@ class ServimedPipeline:
             # Arquivo de saída
             output_file = data_dir / 'servimed_produtos_scrapy.json'
             
+            # Limpar produtos - apenas campos necessários
+            produtos_limpos = []
+            for produto in self.produtos:
+                produto_limpo = {
+                    'gtin': produto.get('gtin', ''),
+                    'codigo': produto.get('codigo', ''),
+                    'descricao': produto.get('descricao', ''),
+                    'preco_fabrica': produto.get('preco_fabrica', 0.0),
+                    'estoque': produto.get('estoque', 0)
+                }
+                produtos_limpos.append(produto_limpo)
+            
             # Metadados
             metadata = {
                 'scraped_at': datetime.now().isoformat(),
-                'total_produtos': len(self.produtos),
+                'total_produtos': len(produtos_limpos),
                 'scraper': 'scrapy',
                 'fonte': 'servimed'
             }
@@ -87,7 +97,7 @@ class ServimedPipeline:
             # Dados finais
             data = {
                 'metadata': metadata,
-                'produtos': self.produtos
+                'produtos': produtos_limpos
             }
             
             # Salvar
