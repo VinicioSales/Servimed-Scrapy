@@ -208,36 +208,36 @@ class PedidoClient:
             
             if response.status_code == 200:
                 resposta = response.json()
+                print(f"Resposta do Servimed: {resposta}")
                 
                 if resposta.get('executado') == 'Ok':
-                    # Extrair código real do pedido da resposta do Servimed
-                    codigo_pedido = (
-                        resposta.get('codigo_pedido') or 
-                        resposta.get('pedido_id') or 
-                        resposta.get('numeropedido') or 
-                        resposta.get('id') or
-                        resposta.get('pedidoId')
-                    )
+                    # Servimed retorna apenas {'executado': 'Ok'} sem código do pedido
+                    # Gerar código único e intuitivo baseado nas características do pedido
                     
-                    if codigo_pedido:
-                        print(f"Pedido realizado com sucesso!")
-                        print(f"Código do pedido Servimed: {codigo_pedido}")
-                        return str(codigo_pedido)
-                    else:
-                        # Fallback: se não encontrou código na resposta, verificar campos disponíveis
-                        print(f"Resposta completa do Servimed: {resposta}")
-                        print("AVISO: Código do pedido não encontrado nos campos esperados")
-                        
-                        # Tentar extrair qualquer ID numérico da resposta
-                        for chave, valor in resposta.items():
-                            if any(term in chave.lower() for term in ['id', 'pedido', 'numero', 'codigo']) and valor:
-                                print(f"Usando {chave}: {valor} como código do pedido")
-                                return str(valor)
-                        
-                        # Último recurso: gerar código baseado no timestamp
-                        codigo_fallback = f"SRV{int(time.time())}"
-                        print(f"Usando código de fallback: {codigo_fallback}")
-                        return codigo_fallback
+                    from datetime import datetime
+                    
+                    # Data e hora atual para criar código legível
+                    agora = datetime.now()
+                    data_str = agora.strftime("%d%m%Y")  # DDMMAAAA
+                    hora_str = agora.strftime("%H%M")    # HHMM
+                    
+                    # Informações do pedido
+                    primeiro_produto = str(itens_pedido[0].get('id', '000000')) if itens_pedido else '000000'
+                    quantidade_total = sum(item.get('quantityRequested', 0) for item in itens_pedido)
+                    cliente_sufixo = str(self.client_id)[-4:]  # Últimos 4 dígitos do cliente
+                    
+                    # Formato legível: SERVIMED_DDMMAAAA_HHMM_PRODUTO1_QTD_CLIENTE
+                    # Exemplo: SERVIMED_13082025_1245_444212_01_7511
+                    codigo_pedido = f"SERVIMED_{data_str}_{hora_str}_{primeiro_produto}_{quantidade_total:02d}_{cliente_sufixo}"
+                    
+                    print(f"Pedido realizado com sucesso no Servimed!")
+                    print(f"Código gerado para rastreamento: {codigo_pedido}")
+                    print(f"  - Data: {agora.strftime('%d/%m/%Y %H:%M')}")
+                    print(f"  - Primeiro produto: {primeiro_produto}")
+                    print(f"  - Quantidade total: {quantidade_total}")
+                    print(f"  - Cliente: {self.client_id} (sufixo: {cliente_sufixo})")
+                    
+                    return codigo_pedido
                 else:
                     print(f"Pedido rejeitado pelo Servimed: {resposta}")
                     return None

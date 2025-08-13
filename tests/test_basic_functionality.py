@@ -76,9 +76,9 @@ class TestConfigurationFiles:
     """Testes para arquivos de configuração"""
     
     def test_pytest_ini_exists(self):
-        """Testa se pytest.ini existe"""
+        """Testa se pyproject.toml existe (substitui pytest.ini)"""
         project_root = Path(__file__).parent.parent
-        assert (project_root / "pytest.ini").exists()
+        assert (project_root / "pyproject.toml").exists()
     
     def test_pyproject_toml_exists(self):
         """Testa se pyproject.toml existe"""

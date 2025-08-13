@@ -5,6 +5,7 @@ import pytest
 import sys
 import os
 import tempfile
+import unittest.mock
 from unittest.mock import Mock, patch
 from pathlib import Path
 
@@ -40,7 +41,7 @@ PORTAL_PASSWORD=test_password
                 mock_path_instance.exists.return_value = True
                 
                 # Mock do open
-                with patch('builtins.open', mock=patch.mock_open(read_data=env_content)):
+                with patch('builtins.open', unittest.mock.mock_open(read_data=env_content)):
                     env_vars = settings.load_env()
                     
                     assert env_vars['ACCESS_TOKEN'] == 'test_token'

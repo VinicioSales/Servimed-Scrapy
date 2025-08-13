@@ -57,13 +57,14 @@ def main():
         # Testes básicos
         ("python -m pytest tests/ -v", "Todos os testes com output detalhado"),
         
-        # Testes por categoria
-        ("python -m pytest tests/test_main.py -v", "Testes do main.py"),
-        ("python -m pytest tests/test_scrapy_wrapper.py -v", "Testes do ScrapyWrapper"),
+        # Testes por categoria (apenas arquivos que existem)
+        ("python -m pytest tests/test_main_simple.py -v", "Testes do main.py (simplificado)"),
+        ("python -m pytest tests/test_scrapy_wrapper_simple.py -v", "Testes do ScrapyWrapper (simplificado)"),
+        ("python -m pytest tests/test_nivel3_simple.py -v", "Testes do Nível 3 (simplificado)"),
         ("python -m pytest tests/test_config.py -v", "Testes de configuração"),
+        ("python -m pytest tests/test_basic_functionality.py -v", "Testes de funcionalidade básica"),
         
         # Testes com markers
-        ("python -m pytest tests/ -m unit -v", "Apenas testes unitários"),
         ("python -m pytest tests/ -m integration -v", "Apenas testes de integração"),
         
         # Testes com cobertura (se coverage estiver instalado)
@@ -166,7 +167,7 @@ if __name__ == "__main__":
             install_test_dependencies()
         
         elif choice == "4":
-            run_command("find tests/ -name '*.py' -type f", "Estrutura de arquivos de teste")
+            run_command("dir tests\\*.py /s /b", "Estrutura de arquivos de teste")
             run_command("python -m pytest tests/ --collect-only", "Coleta de testes")
         
         elif choice == "5":
