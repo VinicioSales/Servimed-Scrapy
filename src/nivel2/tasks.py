@@ -46,37 +46,66 @@ def test_connection_task_simple(self):
 @app.task(bind=True, autoretry_for=(Exception,), retry_kwargs={'max_retries': 2, 'countdown': 30})
 def processar_scraping_simple(self, task_data):
     """
-    Versão simplificada da tarefa de scraping
+    Versão simplificada da tarefa de scraping com suporte a Scrapy
     """
     try:
         task_id = self.request.id
         print(f"[{task_id}] Iniciando processamento...")
         
-        # Importar módulos dentro da task para evitar problemas de path
-        from servimed_scraper.scraper import ServimedScraperCompleto
-        from api_client.callback_client import CallbackAPIClient
-        
-        print(f"[{task_id}] Imports realizados com sucesso")
-        
         # Extrair dados da tarefa
+        framework = "scrapy"  # Sempre usar Scrapy
         usuario = task_data.get('usuario')
         senha = task_data.get('senha')
         callback_url = task_data.get('callback_url', 'https://desafio.cotefacil.net')
         filtro = task_data.get('filtro', '')
         max_pages = task_data.get('max_pages', 1)
         
-        print(f"[{task_id}] Configurações: filtro='{filtro}', max_pages={max_pages}")
+        print(f"[{task_id}] Configurações: framework='scrapy', filtro='{filtro}', max_pages={max_pages}")
         
-        # 1. Executar scraping
-        print(f"[{task_id}] Iniciando scraping...")
-        scraper = ServimedScraperCompleto()
-        resultado_scraping = scraper.run(filtro=filtro, max_pages=max_pages)
+        # 1. Executar scraping sempre com Scrapy
+        print(f"[{task_id}] Iniciando scraping via Scrapy...")
+            
+            # Importar Scrapy wrapper
+            try:
+                from scrapy_wrapper import ScrapyServimedWrapper
+                
+                wrapper = ScrapyServimedWrapper()
+                resultado_scrapy = wrapper.run_spider(filtro=filtro, max_pages=max_pages)
+                
+                if resultado_scrapy:
+                    results = wrapper.get_results()
+                    if results['success']:
+                        produtos_coletados = results['total']
+                        arquivo_produtos = 'data/servimed_produtos_scrapy.json'
+                        print(f"[{task_id}] Scrapy concluído: {produtos_coletados} produtos")
+                    else:
+                        raise Exception(f"Erro no Scrapy: {results.get('error')}")
+                else:
+                    raise Exception("Falha na execução do Scrapy")
+                    
+            except ImportError:
+                print(f"[{task_id}] ERRO: Scrapy não disponível, usando sistema original")
+                framework = 'original'
         
-        produtos_coletados = resultado_scraping['total_produtos']
-        print(f"[{task_id}] Scraping concluído: {produtos_coletados} produtos")
+        if framework == 'original':
+            print(f"[{task_id}] Iniciando scraping via sistema original...")
+            
+            # Importar módulos dentro da task para evitar problemas de path
+            from servimed_scraper.scraper import ServimedScraperCompleto
+            
+            print(f"[{task_id}] Imports realizados com sucesso")
+            
+            scraper = ServimedScraperCompleto()
+            resultado_scraping = scraper.run(filtro=filtro, max_pages=max_pages)
+            
+            produtos_coletados = resultado_scraping['total_produtos']
+            arquivo_produtos = resultado_scraping['arquivo_salvo']
+            print(f"[{task_id}] Scraping concluído: {produtos_coletados} produtos")
         
         # 2. Enviar para API de callback
         print(f"[{task_id}] Enviando para API de callback...")
+        
+        from api_client.callback_client import CallbackAPIClient
         api_client = CallbackAPIClient(base_url=callback_url)
         
         # Autenticar usando OAuth2 password flow
@@ -89,6 +118,7 @@ def processar_scraping_simple(self, task_data):
                 'status': 'error',
                 'task_id': task_id,
                 'error': 'Falha na autenticação OAuth2 com a API',
+                'framework': framework,
                 'timestamp': time.time()
             }
         

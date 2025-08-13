@@ -19,6 +19,7 @@ from .pedido_client import PedidoClient
 def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Processa pedido completo: busca produto, realiza pedido, envia callback
+    Com suporte a framework Scrapy
     
     Args:
         task_data: {
@@ -26,16 +27,18 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
             "senha": "senha", 
             "id_pedido": "1234",
             "produtos": [{"gtin": "123", "codigo": "A123", "quantidade": 1}],
-            "callback_url": "https://desafio.cotefacil.net"
+            "callback_url": "https://desafio.cotefacil.net",
+            "framework": "original" ou "scrapy"
         }
     
     Returns:
         Dict: Resultado da operação
     """
     task_id = self.request.id
+    framework = task_data.get('framework', 'original')
     
     try:
-        print(f"[{task_id}] === NÍVEL 3 - PROCESSAMENTO DE PEDIDO ===")
+        print(f"[{task_id}] === NÍVEL 3 - PROCESSAMENTO DE PEDIDO ({framework}) ===")
         print(f"[{task_id}] Iniciando processamento...")
         
         # Extrair dados da tarefa
@@ -45,12 +48,92 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         produtos = task_data.get('produtos', [])
         callback_url = task_data.get('callback_url', 'https://desafio.cotefacil.net')
         
+        print(f"[{task_id}] Framework: {framework}")
         print(f"[{task_id}] ID Pedido: {id_pedido}")
         print(f"[{task_id}] Produtos: {len(produtos)} itens")
         print(f"[{task_id}] Callback URL: {callback_url}")
         
         if not produtos:
             raise ValueError("Nenhum produto especificado para o pedido")
+        
+        # 0. ETAPA ADICIONAL: Buscar produtos via scraping para verificar disponibilidade
+        print(f"[{task_id}] 0. Verificando disponibilidade dos produtos...")
+        produtos_verificados = []
+        
+        for produto in produtos:
+            codigo = produto.get('codigo', '')
+            gtin = produto.get('gtin', '')
+            
+            if not codigo and not gtin:
+                print(f"[{task_id}] ⚠️ Produto sem código/GTIN, pulando...")
+                continue
+            
+            # Buscar produto via framework escolhido
+            produto_encontrado = None
+            
+            if framework == 'scrapy':
+                print(f"[{task_id}] 🕷️ Buscando {codigo} via Scrapy...")
+                try:
+                    from scrapy_wrapper import ScrapyServimedWrapper
+                    
+                    wrapper = ScrapyServimedWrapper()
+                    resultado = wrapper.run_spider(filtro=codigo, max_pages=1)
+                    
+                    if resultado:
+                        results = wrapper.get_results()
+                        if results['success']:
+                            for prod in results['produtos']:
+                                if prod.get('codigo') == codigo or prod.get('gtin') == gtin:
+                                    produto_encontrado = prod
+                                    break
+                    
+                    if produto_encontrado:
+                        print(f"[{task_id}] ✅ Produto {codigo} encontrado via Scrapy")
+                    else:
+                        print(f"[{task_id}] ❌ Produto {codigo} não encontrado via Scrapy")
+                        
+                except ImportError:
+                    print(f"[{task_id}] ⚠️ Scrapy não disponível, usando sistema original")
+                    framework = 'original'
+            
+            if framework == 'original' or not produto_encontrado:
+                print(f"[{task_id}] 📄 Buscando {codigo} via sistema original...")
+                
+                from servimed_scraper.scraper import ServimedScraperCompleto
+                
+                scraper = ServimedScraperCompleto()
+                resultado_scraping = scraper.run(filtro=codigo, max_pages=1)
+                
+                # Buscar produto nos resultados
+                arquivo_produtos = resultado_scraping['arquivo_salvo']
+                with open(arquivo_produtos, 'r', encoding='utf-8') as f:
+                    dados = json.load(f)
+                
+                for prod in dados.get('produtos', []):
+                    if prod.get('codigo') == codigo or prod.get('gtin') == gtin:
+                        produto_encontrado = prod
+                        break
+                
+                if produto_encontrado:
+                    print(f"[{task_id}] ✅ Produto {codigo} encontrado via sistema original")
+                else:
+                    print(f"[{task_id}] ❌ Produto {codigo} não encontrado")
+            
+            if produto_encontrado:
+                # Adicionar dados do scraping ao produto do pedido
+                produto_completo = {
+                    **produto,
+                    'descricao': produto_encontrado.get('descricao', ''),
+                    'preco_fabrica': produto_encontrado.get('preco_fabrica', 0),
+                    'estoque_disponivel': produto_encontrado.get('estoque', 0),
+                    'verificado_via': framework
+                }
+                produtos_verificados.append(produto_completo)
+            else:
+                print(f"[{task_id}] ⚠️ Produto {codigo} não verificado, incluindo mesmo assim")
+                produtos_verificados.append(produto)
+        
+        print(f"[{task_id}] Produtos verificados: {len(produtos_verificados)}/{len(produtos)}")
         
         # 1. Criar cliente de pedidos e autenticar
         print(f"[{task_id}] 1. Autenticando no portal...")
@@ -62,7 +145,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         
         # 2. Realizar pedido
         print(f"[{task_id}] 2. Realizando pedido...")
-        codigo_confirmacao = pedido_client.realizar_pedido(produtos)
+        codigo_confirmacao = pedido_client.realizar_pedido(produtos_verificados)
         
         if not codigo_confirmacao:
             raise ValueError("Falha ao realizar pedido no portal")
@@ -87,7 +170,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
                     "codigo": produto["codigo"],
                     "quantidade": produto["quantidade"]
                 }
-                for produto in produtos
+                for produto in produtos_verificados
             ]
         }
         

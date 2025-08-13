@@ -31,7 +31,7 @@ class PedidoQueueClient:
     def enqueue_pedido(self, usuario: str, senha: str, id_pedido: str, 
                       produtos: List[Dict], callback_url: str = "https://desafio.cotefacil.net") -> str:
         """
-        Enfileira uma tarefa de pedido
+        Enfileira uma tarefa de pedido - sempre usa Scrapy
         
         Args:
             usuario: Email do usuário
@@ -48,7 +48,8 @@ class PedidoQueueClient:
             "senha": senha,
             "id_pedido": id_pedido,
             "produtos": produtos,
-            "callback_url": callback_url
+            "callback_url": callback_url,
+            "framework": "scrapy"  # Sempre usar Scrapy
         }
         
         # Enviar para a fila
@@ -85,9 +86,11 @@ def main():
     """Interface CLI para o cliente"""
     if len(sys.argv) < 2:
         print("Uso:")
-        print("  python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade>")
+        print("  python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
         print("  python pedido_queue_client.py status <task_id>")
         print("  python pedido_queue_client.py test")
+        print("")
+        print("ℹ️  Sempre usa Scrapy automaticamente")
         return
     
     client = PedidoQueueClient()
@@ -119,7 +122,7 @@ def main():
             "quantidade": quantidade
         }]
         
-        print(f"📦 Enfileirando pedido {id_pedido}...")
+        print(f"📦 Enfileirando pedido {id_pedido} com Scrapy...")
         print(f"Produto: {codigo_produto} (Qtd: {quantidade})")
         if gtin:
             print(f"GTIN: {gtin}")
@@ -138,7 +141,7 @@ def main():
         print(json.dumps(status, indent=2, ensure_ascii=False))
     
     elif command == "test":
-        print("🧪 Testando sistema de pedidos...")
+        print("🧪 Testando sistema de pedidos com Scrapy...")
         
         # Criar pedido de teste
         id_pedido = f"TEST{int(time.time())}"
