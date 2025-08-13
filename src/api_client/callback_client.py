@@ -7,36 +7,49 @@ Cliente para autenticação e envio de produtos para a API de callback.
 
 import requests
 import json
+import os
 from typing import List, Dict, Optional
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 
 class CallbackAPIClient:
     """Cliente para interagir com a API de callback"""
     
-    def __init__(self, base_url: str = "https://desafio.cotefacil.net"):
-        self.base_url = base_url.rstrip('/')
-        self.token = None
+    def __init__(self, base_url: Optional[str] = None):
+        self.base_url = (base_url or os.getenv('COTEFACIL_API_URL', 'https://desafio.cotefacil.net')).rstrip('/')
+        self.access_token = None
         self.session = requests.Session()
-    
-    def authenticate(self, username: str, password: str, client_id: str, client_secret: str) -> bool:
-        """
-        Autentica na API e obtém o token de acesso
         
-        Args:
-            username: Email do usuário
-            password: Senha do usuário  
-            client_id: ID do cliente
-            client_secret: Secret do cliente
-            
+        # Configurar headers padrão
+        self.session.headers.update({
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        })
+    
+    def authenticate(self, username: Optional[str] = None, password: Optional[str] = None, 
+                    client_id: Optional[str] = None, client_secret: Optional[str] = None) -> bool:
+        """
+        Autentica via OAuth2PasswordBearer usando dados do .env
+        
         Returns:
             bool: True se autenticado com sucesso
         """
+        # Usar dados do .env se não fornecidos
+        username = username or os.getenv('PORTAL_EMAIL')
+        password = password or os.getenv('PORTAL_PASSWORD')
+        client_id = client_id or os.getenv('CLIENT_ID')
+        client_secret = client_secret or os.getenv('CLIENT_SECRET')
+        
+        if not all([username, password, client_id, client_secret]):
+            print("ERRO: Credenciais OAuth2 incompletas no .env")
+            return False
+        
         try:
-            # Primeiro, criar usuário se não existir
-            self._create_user_if_not_exists(username, password)
-            
-            # Dados para autenticação OAuth2
-            auth_data = {
+            # Dados para OAuth2 password flow
+            token_data = {
                 "username": username,
                 "password": password,
                 "client_id": client_id,
@@ -44,64 +57,49 @@ class CallbackAPIClient:
                 "grant_type": "password"
             }
             
-            # Headers para OAuth2
-            headers = {
+            # Headers para OAuth2 token request
+            token_headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json"
             }
             
+            print(f"Autenticando com username: {username}")
+            print(f"Client ID: {client_id}")
+            
             response = self.session.post(
                 f"{self.base_url}/oauth/token",
-                data=auth_data,
-                headers=headers,
+                data=token_data,
+                headers=token_headers,
                 timeout=30
             )
             
+            print(f"Status da autenticação: {response.status_code}")
+            print(f"Resposta: {response.text}")
+            
             if response.status_code == 200:
-                token_data = response.json()
-                self.token = token_data.get("access_token")
+                token_info = response.json()
+                self.access_token = token_info.get("access_token")
                 
-                # Adiciona token aos headers da sessão
-                self.session.headers.update({
-                    "Authorization": f"Bearer {self.token}"
-                })
-                
-                print(f"Autenticacao realizada com sucesso!")
-                print(f"Token obtido: {self.token[:50]}...")
-                return True
+                if self.access_token:
+                    # Atualizar headers da sessão com o token
+                    self.session.headers.update({
+                        "Authorization": f"Bearer {self.access_token}"
+                    })
+                    
+                    print(f"✅ Autenticação bem-sucedida!")
+                    print(f"Access token obtido: {self.access_token[:50]}...")
+                    return True
+                else:
+                    print("❌ Token de acesso não encontrado na resposta")
+                    return False
             else:
-                print(f"Erro na autenticacao: {response.status_code}")
-                print(f"Resposta: {response.text}")
+                print(f"❌ Falha na autenticação: {response.status_code}")
+                print(f"Erro: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"Erro durante autenticacao: {e}")
+            print(f"❌ Erro durante autenticação OAuth2: {e}")
             return False
-    
-    def _create_user_if_not_exists(self, username: str, password: str):
-        """Tenta criar usuário se não existir"""
-        try:
-            signup_data = {
-                "username": username,
-                "password": password,
-                "email": username  # Usando email como username
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/oauth/signup",
-                json=signup_data,
-                timeout=30
-            )
-            
-            if response.status_code in [200, 201]:
-                print(f"Usuario criado/verificado: {username}")
-            elif response.status_code == 409:
-                print(f"Usuario ja existe: {username}")
-            else:
-                print(f"Aviso ao criar usuario: {response.status_code} - {response.text}")
-                
-        except Exception as e:
-            print(f"Aviso ao criar usuario: {e}")
     
     def send_products(self, products: List[Dict]) -> bool:
         """
@@ -113,8 +111,8 @@ class CallbackAPIClient:
         Returns:
             bool: True se enviado com sucesso
         """
-        if not self.token:
-            print("Erro: Nao autenticado. Execute authenticate() primeiro.")
+        if not self.access_token:
+            print("Erro: Não autenticado. Execute authenticate() primeiro.")
             return False
         
         try:
@@ -136,10 +134,18 @@ class CallbackAPIClient:
                 timeout=60
             )
             
+            print(f"Status da requisição: {response.status_code}")
+            print(f"Headers da resposta: {dict(response.headers)}")
+            print(f"Conteúdo da resposta: {response.text}")
+            
             if response.status_code == 201:
                 result = response.json()
                 print(f"Produtos enviados com sucesso! {len(result)} produtos processados.")
                 return True
+            elif response.status_code == 401:
+                print(f"ERRO DE AUTENTICAÇÃO: Token inválido ou expirado!")
+                print(f"Resposta: {response.text}")
+                return False
             else:
                 print(f"Erro ao enviar produtos: {response.status_code}")
                 print(f"Resposta: {response.text}")

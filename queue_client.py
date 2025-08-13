@@ -2,7 +2,29 @@
 Cliente Simplificado para Testes do Nível 2
 """
 
-from src.nivel2.celery_app import app
+import os
+import sys
+from pathlib import Path
+
+# Configurar path
+current_dir = Path(__file__).parent.absolute()
+src_dir = current_dir / "src"
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+
+from celery import Celery
+
+# Configuração Redis
+REDIS_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+
+# Criar app Celery
+app = Celery(
+    'servimed_scraper_simple',
+    broker=REDIS_URL,
+    backend=REDIS_URL
+)
 
 
 def enqueue_scraping(filtro="", max_pages=1):

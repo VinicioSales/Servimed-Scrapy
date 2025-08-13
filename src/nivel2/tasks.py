@@ -79,14 +79,18 @@ def processar_scraping_simple(self, task_data):
         print(f"[{task_id}] Enviando para API de callback...")
         api_client = CallbackAPIClient(base_url=callback_url)
         
-        # Autenticar
-        print(f"[{task_id}] Autenticando na API...")
-        api_client.authenticate(
-            username=usuario,
-            password=senha,
-            client_id="your_client_id",  # Pode ser configurável
-            client_secret="your_client_secret"  # Pode ser configurável
-        )
+        # Autenticar usando OAuth2 password flow
+        print(f"[{task_id}] Realizando autenticação OAuth2...")
+        auth_success = api_client.authenticate()
+        
+        if not auth_success:
+            print(f"[{task_id}] ERRO: Falha na autenticação OAuth2!")
+            return {
+                'status': 'error',
+                'task_id': task_id,
+                'error': 'Falha na autenticação OAuth2 com a API',
+                'timestamp': time.time()
+            }
         
         # Enviar produtos
         print(f"[{task_id}] Enviando produtos para API...")
@@ -94,7 +98,11 @@ def processar_scraping_simple(self, task_data):
         # Ler arquivo de produtos gerado
         arquivo_produtos = resultado_scraping['arquivo_salvo']
         with open(arquivo_produtos, 'r', encoding='utf-8') as f:
-            produtos = json.load(f)
+            dados_completos = json.load(f)
+        
+        # Extrair apenas a lista de produtos
+        produtos = dados_completos.get('produtos', [])
+        print(f"[{task_id}] Produtos extraídos para envio: {len(produtos)}")
         
         api_response = api_client.send_products(produtos)
         print(f"[{task_id}] Resposta da API: {api_response}")
