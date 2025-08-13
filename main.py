@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 SERVIMED SCRAPER - ARQUIVO PRINCIPAL
 ====================================
@@ -27,15 +27,7 @@ src_dir = current_dir / "src"
 if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
-# Imports condicionais dos scrapers
-try:
-    from servimed_scraper.scraper import ServimedScraperCompleto
-except ImportError:
-    try:
-        from scraper import ServimedScraperCompleto
-    except ImportError:
-        ServimedScraperCompleto = None
-
+# Imports condicionais
 try:
     from src.scrapy_wrapper import ScrapyServimedWrapper
 except ImportError:
@@ -46,12 +38,12 @@ def executar_nivel_1(args):
     """Execução direta (Nível 1) - Sempre usando Scrapy"""
     print("EXECUTANDO NIVEL 1 - MODO DIRETO")
     print("=" * 50)
-    print("🕷️ USANDO FRAMEWORK SCRAPY")
+    print("USANDO FRAMEWORK SCRAPY")
     print("=" * 50)
     
     # Verificar se Scrapy está disponível
     if not ScrapyServimedWrapper:
-        print("❌ Scrapy wrapper não está disponível")
+        print("ERRO: Scrapy wrapper não está disponível")
         print("Verifique se o Scrapy está instalado: pip install scrapy")
         return None
     
@@ -76,7 +68,7 @@ def executar_nivel_1(args):
         )
         
         if resultado:
-            print("\n✅ EXECUCAO SCRAPY CONCLUIDA COM SUCESSO!")
+            print("\nSUCESSO: EXECUCAO SCRAPY CONCLUIDA COM SUCESSO!")
             
             # Carregar resultados
             results = wrapper.get_results()
@@ -90,14 +82,14 @@ def executar_nivel_1(args):
                     'success': True
                 }
             else:
-                print(f"❌ Erro ao carregar resultados: {results.get('error')}")
+                print(f"ERRO: Erro ao carregar resultados: {results.get('error')}")
                 return None
         else:
-            print("❌ Erro na execução do Scrapy")
+            print("ERRO: Erro na execução do Scrapy")
             return None
             
     except Exception as e:
-        print(f"\n❌ Erro durante execução Scrapy: {e}")
+        print(f"\nERRO: Erro durante execução Scrapy: {e}")
         return None
 
 
@@ -105,11 +97,11 @@ def executar_nivel_2(args):
     """Execução via filas (Nível 2) - Sempre usando Scrapy"""
     print("EXECUTANDO NIVEL 2 - MODO FILAS")
     print("=" * 50)
-    print("🕷️ USANDO FRAMEWORK SCRAPY")
+    print("USANDO FRAMEWORK SCRAPY")
     print("=" * 50)
     
     try:
-        from nivel2.queue_client import TaskQueueClient
+        from src.nivel2.queue_client import TaskQueueClient
     except ImportError as e:
         print(f"Erro ao importar cliente de filas: {e}")
         print("Certifique-se de que o Redis e Celery estao instalados:")
@@ -128,7 +120,7 @@ def executar_nivel_2(args):
         callback_url = args.callback_url or os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
         
         if not usuario or not senha:
-            print("❌ Credenciais não encontradas")
+            print("ERRO: Credenciais não encontradas")
             print("Forneça via argumentos --usuario/--senha ou configure no .env:")
             print("CALLBACK_API_USER e CALLBACK_API_PASSWORD")
             return
@@ -263,7 +255,7 @@ Pré-requisitos para Nível 2:
     # Inicialização comum
     print("SERVIMED SCRAPER - ARQUIVO PRINCIPAL")
     print("=" * 60)
-    print("🕷️ FRAMEWORK: SCRAPY EM TODOS OS NÍVEIS")
+    print("FRAMEWORK: SCRAPY EM TODOS OS NÍVEIS")
     print("=" * 60)
     
     # Executar o nível apropriado
@@ -272,12 +264,12 @@ Pré-requisitos para Nível 2:
     elif args.nivel == 2:
         return executar_nivel_2(args)
     elif args.nivel == 3:
-        print("🎯 NÍVEL 3: Sistema de Pedidos")
+        print("NÍVEL 3: Sistema de Pedidos")
         print("Use: python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
         print("Para verificar: python pedido_queue_client.py status <task_id>")
         print("Teste: python pedido_queue_client.py test")
         print("")
-        print("ℹ️  O Nível 3 sempre usa Scrapy automaticamente.")
+        print("O Nível 3 sempre usa Scrapy automaticamente.")
         return None
 
 

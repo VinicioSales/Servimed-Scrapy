@@ -1,4 +1,4 @@
-"""
+﻿"""
 Celery App Simplificado para Windows
 ====================================
 

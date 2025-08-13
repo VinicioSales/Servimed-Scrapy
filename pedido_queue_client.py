@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Cliente de Queue - Nível 3
 ===========================
@@ -90,7 +90,7 @@ def main():
         print("  python pedido_queue_client.py status <task_id>")
         print("  python pedido_queue_client.py test")
         print("")
-        print("ℹ️  Sempre usa Scrapy automaticamente")
+        print("INFORMAÇÃO: Sempre usa Scrapy automaticamente")
         return
     
     client = PedidoQueueClient()
@@ -98,7 +98,7 @@ def main():
     
     if command == "enqueue":
         if len(sys.argv) < 5:
-            print("❌ Parâmetros insuficientes")
+            print("ERRO: Parâmetros insuficientes")
             print("Uso: python pedido_queue_client.py enqueue <id_pedido> <codigo_produto> <quantidade> [gtin]")
             return
         
@@ -112,7 +112,7 @@ def main():
         senha = os.getenv('CALLBACK_API_PASSWORD')
         
         if not usuario or not senha:
-            print("❌ Credenciais não encontradas no .env")
+            print("ERRO: Credenciais não encontradas no .env")
             print("Verifique CALLBACK_API_USER e CALLBACK_API_PASSWORD")
             return
         
@@ -122,7 +122,7 @@ def main():
             "quantidade": quantidade
         }]
         
-        print(f"📦 Enfileirando pedido {id_pedido} com Scrapy...")
+        print(f"Enfileirando pedido {id_pedido} com Scrapy...")
         print(f"Produto: {codigo_produto} (Qtd: {quantidade})")
         if gtin:
             print(f"GTIN: {gtin}")
@@ -132,7 +132,7 @@ def main():
     
     elif command == "status":
         if len(sys.argv) < 3:
-            print("❌ Task ID necessário")
+            print("ERRO: Task ID necessário")
             print("Uso: python pedido_queue_client.py status <task_id>")
             return
         
@@ -141,7 +141,7 @@ def main():
         print(json.dumps(status, indent=2, ensure_ascii=False))
     
     elif command == "test":
-        print("🧪 Testando sistema de pedidos com Scrapy...")
+        print("Testando sistema de pedidos com Scrapy...")
         
         # Criar pedido de teste
         id_pedido = f"TEST{int(time.time())}"
@@ -155,7 +155,7 @@ def main():
         senha = os.getenv('CALLBACK_API_PASSWORD')
         
         if not usuario or not senha:
-            print("❌ Credenciais não encontradas no .env")
+            print("ERRO: Credenciais não encontradas no .env")
             print("Verifique CALLBACK_API_USER e CALLBACK_API_PASSWORD")
             return
         
@@ -166,12 +166,12 @@ def main():
             produtos
         )
         
-        print(f"✅ Pedido de teste criado: {task_id}")
+        print(f"SUCESSO: Pedido de teste criado: {task_id}")
         print(f"ID Pedido: {id_pedido}")
         print("Execute 'status {task_id}' para acompanhar")
     
     else:
-        print(f"❌ Comando desconhecido: {command}")
+        print(f"ERRO: Comando desconhecido: {command}")
 
 
 if __name__ == "__main__":

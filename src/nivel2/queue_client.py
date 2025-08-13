@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cliente para Enfileiramento de Tarefas
 ======================================
 

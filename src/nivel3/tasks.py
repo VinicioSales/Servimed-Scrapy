@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tasks Celery - Nível 3
 =======================
 
@@ -65,14 +65,14 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
             gtin = produto.get('gtin', '')
             
             if not codigo and not gtin:
-                print(f"[{task_id}] ⚠️ Produto sem código/GTIN, pulando...")
+                print(f"[{task_id}] Produto sem código/GTIN, pulando...")
                 continue
             
             # Buscar produto via framework escolhido
             produto_encontrado = None
             
             if framework == 'scrapy':
-                print(f"[{task_id}] 🕷️ Buscando {codigo} via Scrapy...")
+                print(f"[{task_id}] Buscando {codigo} via Scrapy...")
                 try:
                     from scrapy_wrapper import ScrapyServimedWrapper
                     
@@ -88,16 +88,16 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
                                     break
                     
                     if produto_encontrado:
-                        print(f"[{task_id}] ✅ Produto {codigo} encontrado via Scrapy")
+                        print(f"[{task_id}] Produto {codigo} encontrado via Scrapy")
                     else:
-                        print(f"[{task_id}] ❌ Produto {codigo} não encontrado via Scrapy")
+                        print(f"[{task_id}] Produto {codigo} não encontrado via Scrapy")
                         
                 except ImportError:
-                    print(f"[{task_id}] ⚠️ Scrapy não disponível, usando sistema original")
+                    print(f"[{task_id}] Scrapy não disponível, usando sistema original")
                     framework = 'original'
             
             if framework == 'original' or not produto_encontrado:
-                print(f"[{task_id}] 📄 Buscando {codigo} via sistema original...")
+                print(f"[{task_id}] Buscando {codigo} via sistema original...")
                 
                 from servimed_scraper.scraper import ServimedScraperCompleto
                 
@@ -115,9 +115,9 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
                         break
                 
                 if produto_encontrado:
-                    print(f"[{task_id}] ✅ Produto {codigo} encontrado via sistema original")
+                    print(f"[{task_id}] Produto {codigo} encontrado via sistema original")
                 else:
-                    print(f"[{task_id}] ❌ Produto {codigo} não encontrado")
+                    print(f"[{task_id}] Produto {codigo} não encontrado")
             
             if produto_encontrado:
                 # Adicionar dados do scraping ao produto do pedido
@@ -130,7 +130,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
                 }
                 produtos_verificados.append(produto_completo)
             else:
-                print(f"[{task_id}] ⚠️ Produto {codigo} não verificado, incluindo mesmo assim")
+                print(f"[{task_id}] Produto {codigo} não verificado, incluindo mesmo assim")
                 produtos_verificados.append(produto)
         
         print(f"[{task_id}] Produtos verificados: {len(produtos_verificados)}/{len(produtos)}")
@@ -150,7 +150,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         if not codigo_confirmacao:
             raise ValueError("Falha ao realizar pedido no portal")
         
-        print(f"[{task_id}] ✅ Pedido realizado! Código: {codigo_confirmacao}")
+        print(f"[{task_id}] Pedido realizado! Código: {codigo_confirmacao}")
         
         # 3. Enviar callback para API
         print(f"[{task_id}] 3. Enviando callback para API...")
@@ -162,7 +162,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
             raise ValueError("Falha na autenticação com API Cotefacil")
         
         # PASSO 1: Criar pedido na API (POST /pedido)
-        print(f"[{task_id}] 📤 Criando pedido na API...")
+        print(f"[{task_id}] Criando pedido na API...")
         pedido_api_data = {
             "itens": [
                 {
@@ -177,11 +177,11 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         pedido_criado_id = criar_pedido_na_api(api_client, pedido_api_data)
         
         if not pedido_criado_id:
-            print(f"[{task_id}] ❌ Falha ao criar pedido na API")
+            print(f"[{task_id}] Falha ao criar pedido na API")
             pedido_criado_id = str(id_pedido)  # Usar ID original como fallback
         
         # PASSO 2: Enviar confirmação (PATCH /pedido/:id)
-        print(f"[{task_id}] 📤 Enviando confirmação do pedido...")
+        print(f"[{task_id}] Enviando confirmação do pedido...")
         callback_data = {
             "codigo_confirmacao": codigo_confirmacao,
             "status": "pedido_realizado"
@@ -191,7 +191,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         patch_success = enviar_patch_pedido(api_client, str(pedido_criado_id), callback_data)
         
         if not patch_success:
-            print(f"[{task_id}] ⚠️ Callback falhou, mas pedido foi realizado")
+            print(f"[{task_id}] Callback falhou, mas pedido foi realizado")
         
         # Resultado final
         resultado_final = {
@@ -206,7 +206,7 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
             'timestamp': time.time()
         }
         
-        print(f"[{task_id}] ✅ Processamento concluído!")
+        print(f"[{task_id}] Processamento concluído!")
         return resultado_final
         
     except Exception as e:
@@ -251,14 +251,14 @@ def criar_pedido_na_api(api_client: CallbackAPIClient, pedido_data: Dict) -> str
         if response.status_code == 201:
             resultado = response.json()
             pedido_id = resultado.get('id')
-            print(f"✅ Pedido criado na API com ID: {pedido_id}")
+            print(f"Pedido criado na API com ID: {pedido_id}")
             return str(pedido_id) if pedido_id else ""
         else:
-            print(f"❌ Falha ao criar pedido: HTTP {response.status_code}")
+            print(f"Falha ao criar pedido: HTTP {response.status_code}")
             return ""
             
     except Exception as e:
-        print(f"❌ Erro ao criar pedido na API: {e}")
+        print(f"Erro ao criar pedido na API: {e}")
         return ""
 
 
@@ -286,14 +286,14 @@ def enviar_patch_pedido(api_client: CallbackAPIClient, id_pedido: str, callback_
         print(f"Response: {response.text}")
         
         if response.status_code in [200, 201, 204]:
-            print(f"✅ Callback enviado com sucesso!")
+            print(f"Callback enviado com sucesso!")
             return True
         else:
-            print(f"❌ Callback falhou: HTTP {response.status_code}")
+            print(f"Callback falhou: HTTP {response.status_code}")
             return False
             
     except Exception as e:
-        print(f"❌ Erro no callback: {e}")
+        print(f"Erro no callback: {e}")
         return False
 
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cliente Simplificado para Testes do Nível 2
 """
 
@@ -46,7 +46,7 @@ def enqueue_scraping(filtro="", max_pages=1):
     callback_url = os.getenv('CALLBACK_URL', 'https://desafio.cotefacil.net')
     
     if not usuario or not senha:
-        print("❌ Credenciais não encontradas no .env")
+        print("Credenciais não encontradas no .env")
         print("Configure CALLBACK_API_USER e CALLBACK_API_PASSWORD")
         return None
     

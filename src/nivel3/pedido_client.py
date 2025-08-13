@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cliente de Pedidos - Nível 3
 =============================
 
@@ -64,7 +64,7 @@ class PedidoClient:
             self.x_cart = os.getenv('X_CART')
             
             if not all([self.access_token, self.session_token, self.logged_user, self.client_id]):
-                print("❌ Tokens de autenticação incompletos no .env")
+                print("Tokens de autenticação incompletos no .env")
                 return False
             
             # Configurar headers de autenticação
@@ -81,11 +81,11 @@ class PedidoClient:
                 'sessiontoken': self.session_token
             })
             
-            print(f"✅ Autenticação configurada para usuário: {self.logged_user}")
+            print(f"Autenticação configurada para usuário: {self.logged_user}")
             return True
             
         except Exception as e:
-            print(f"❌ Erro na autenticação: {e}")
+            print(f"Erro na autenticação: {e}")
             return False
     
     def buscar_produto_por_codigo(self, codigo: str) -> Optional[Dict]:
@@ -108,7 +108,7 @@ class PedidoClient:
             
             # Verificar se retornou dados válidos
             if not resultado or 'arquivo_salvo' not in resultado:
-                print(f"❌ Falha na busca do produto {codigo}")
+                print(f"Falha na busca do produto {codigo}")
                 return None
             
             # Ler arquivo de produtos gerado
@@ -122,14 +122,14 @@ class PedidoClient:
             # Procurar produto com código exato
             for produto in produtos:
                 if str(produto.get('codigo', '')) == str(codigo):
-                    print(f"✅ Produto encontrado: {produto.get('descricao', '')}")
+                    print(f"Produto encontrado: {produto.get('descricao', '')}")
                     return produto
             
-            print(f"❌ Produto com código {codigo} não encontrado")
+            print(f"Produto com código {codigo} não encontrado")
             return None
             
         except Exception as e:
-            print(f"❌ Erro ao buscar produto: {e}")
+            print(f"Erro ao buscar produto: {e}")
             return None
     
     def realizar_pedido(self, produtos_pedido: List[Dict]) -> Optional[str]:
@@ -144,7 +144,7 @@ class PedidoClient:
         """
         try:
             if not self.access_token:
-                print("❌ Não autenticado. Execute authenticate() primeiro.")
+                print("Não autenticado. Execute authenticate() primeiro.")
                 return None
             
             # Buscar dados dos produtos
@@ -157,7 +157,7 @@ class PedidoClient:
                 # Buscar dados do produto
                 produto = self.buscar_produto_por_codigo(codigo)
                 if not produto:
-                    print(f"❌ Produto {codigo} não encontrado, ignorando...")
+                    print(f"Produto {codigo} não encontrado, ignorando...")
                     continue
                 
                 # Montar item do pedido baseado no DevTools
@@ -176,10 +176,10 @@ class PedidoClient:
                 }
                 
                 itens_pedido.append(item_pedido)
-                print(f"✅ Item adicionado: {produto.get('descricao', '')} (Qtd: {quantidade})")
+                print(f"Item adicionado: {produto.get('descricao', '')} (Qtd: {quantidade})")
             
             if not itens_pedido:
-                print("❌ Nenhum produto válido para o pedido")
+                print("Nenhum produto válido para o pedido")
                 return None
             
             # Montar payload do pedido baseado no DevTools
@@ -193,7 +193,7 @@ class PedidoClient:
                 "itens": itens_pedido
             }
             
-            print(f"📦 Enviando pedido com {len(itens_pedido)} itens...")
+            print(f"Enviando pedido com {len(itens_pedido)} itens...")
             print(f"Payload: {json.dumps(payload_pedido, indent=2)}")
             
             # Enviar pedido
@@ -213,18 +213,18 @@ class PedidoClient:
                 if resposta.get('executado') == 'Ok':
                     # Gerar código de confirmação único
                     codigo_confirmacao = f"SRV{int(time.time())}{uuid.uuid4().hex[:6].upper()}"
-                    print(f"✅ Pedido realizado com sucesso!")
+                    print(f"Pedido realizado com sucesso!")
                     print(f"Código de confirmação: {codigo_confirmacao}")
                     return codigo_confirmacao
                 else:
-                    print(f"❌ Pedido rejeitado: {resposta}")
+                    print(f"Pedido rejeitado: {resposta}")
                     return None
             else:
-                print(f"❌ Erro HTTP {response.status_code}: {response.text}")
+                print(f"Erro HTTP {response.status_code}: {response.text}")
                 return None
                 
         except Exception as e:
-            print(f"❌ Erro ao realizar pedido: {e}")
+            print(f"Erro ao realizar pedido: {e}")
             return None
     
     def test_connection(self) -> bool:
@@ -234,3 +234,4 @@ class PedidoClient:
             return response.status_code < 500
         except:
             return False
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cliente para API de Callback
 ============================
 
@@ -86,19 +86,19 @@ class CallbackAPIClient:
                         "Authorization": f"Bearer {self.access_token}"
                     })
                     
-                    print(f"✅ Autenticação bem-sucedida!")
+                    print(f"Autenticação bem-sucedida!")
                     print(f"Access token obtido: {self.access_token[:50]}...")
                     return True
                 else:
-                    print("❌ Token de acesso não encontrado na resposta")
+                    print("Token de acesso não encontrado na resposta")
                     return False
             else:
-                print(f"❌ Falha na autenticação: {response.status_code}")
+                print(f"Falha na autenticação: {response.status_code}")
                 print(f"Erro: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Erro durante autenticação OAuth2: {e}")
+            print(f"Erro durante autenticação OAuth2: {e}")
             return False
     
     def send_products(self, products: List[Dict]) -> bool:

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configurações dos diretórios
 """
 

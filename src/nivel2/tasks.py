@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tarefas Celery Simplificadas - Versão Windows
 ==============================================
 
@@ -64,43 +64,40 @@ def processar_scraping_simple(self, task_data):
         
         # 1. Executar scraping sempre com Scrapy
         print(f"[{task_id}] Iniciando scraping via Scrapy...")
-            
-            # Importar Scrapy wrapper
-            try:
-                from scrapy_wrapper import ScrapyServimedWrapper
-                
-                wrapper = ScrapyServimedWrapper()
-                resultado_scrapy = wrapper.run_spider(filtro=filtro, max_pages=max_pages)
-                
-                if resultado_scrapy:
-                    results = wrapper.get_results()
-                    if results['success']:
-                        produtos_coletados = results['total']
-                        arquivo_produtos = 'data/servimed_produtos_scrapy.json'
-                        print(f"[{task_id}] Scrapy concluído: {produtos_coletados} produtos")
-                    else:
-                        raise Exception(f"Erro no Scrapy: {results.get('error')}")
-                else:
-                    raise Exception("Falha na execução do Scrapy")
-                    
-            except ImportError:
-                print(f"[{task_id}] ERRO: Scrapy não disponível, usando sistema original")
-                framework = 'original'
         
-        if framework == 'original':
-            print(f"[{task_id}] Iniciando scraping via sistema original...")
+        # Importar Scrapy wrapper
+        try:
+            from scrapy_wrapper import ScrapyServimedWrapper
             
-            # Importar módulos dentro da task para evitar problemas de path
+            wrapper = ScrapyServimedWrapper()
+            resultado_scrapy = wrapper.run_spider(filtro=filtro, max_pages=max_pages)
+            
+            if resultado_scrapy:
+                results = wrapper.get_results()
+                if results['success']:
+                    produtos_coletados = results['total']
+                    arquivo_produtos = 'data/servimed_produtos_scrapy.json'
+                    print(f"[{task_id}] Scrapy concluído: {produtos_coletados} produtos")
+                    framework = 'scrapy'
+                else:
+                    raise Exception(f"Erro no Scrapy: {results.get('error')}")
+            else:
+                raise Exception("Falha na execução do Scrapy")
+                
+        except Exception as e_scrapy:
+            print(f"[{task_id}] ERRO no Scrapy: {e_scrapy}")
+            print(f"[{task_id}] Fallback para sistema original...")
+            
+            # Fallback para sistema original
             from servimed_scraper.scraper import ServimedScraperCompleto
-            
-            print(f"[{task_id}] Imports realizados com sucesso")
             
             scraper = ServimedScraperCompleto()
             resultado_scraping = scraper.run(filtro=filtro, max_pages=max_pages)
             
             produtos_coletados = resultado_scraping['total_produtos']
             arquivo_produtos = resultado_scraping['arquivo_salvo']
-            print(f"[{task_id}] Scraping concluído: {produtos_coletados} produtos")
+            framework = 'original'
+            print(f"[{task_id}] Sistema original concluído: {produtos_coletados} produtos")
         
         # 2. Enviar para API de callback
         print(f"[{task_id}] Enviando para API de callback...")
