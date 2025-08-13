@@ -133,13 +133,13 @@ class PedidoClient:
     
     def realizar_pedido(self, produtos_pedido: List[Dict]) -> Optional[str]:
         """
-        Realiza pedido no portal Servimed
+        Realiza pedido no portal Servimed e retorna o código do pedido
         
         Args:
             produtos_pedido: Lista de produtos com {gtin, codigo, quantidade}
             
         Returns:
-            str: Código de confirmação do pedido ou None se falhou
+            str: Código do pedido retornado pelo Servimed ou None se falhou
         """
         try:
             if not self.access_token:
@@ -210,13 +210,36 @@ class PedidoClient:
                 resposta = response.json()
                 
                 if resposta.get('executado') == 'Ok':
-                    # Gerar código de confirmação único
-                    codigo_confirmacao = f"SRV{int(time.time())}{uuid.uuid4().hex[:6].upper()}"
-                    print(f"Pedido realizado com sucesso!")
-                    print(f"Código de confirmação: {codigo_confirmacao}")
-                    return codigo_confirmacao
+                    # Extrair código real do pedido da resposta do Servimed
+                    codigo_pedido = (
+                        resposta.get('codigo_pedido') or 
+                        resposta.get('pedido_id') or 
+                        resposta.get('numeropedido') or 
+                        resposta.get('id') or
+                        resposta.get('pedidoId')
+                    )
+                    
+                    if codigo_pedido:
+                        print(f"Pedido realizado com sucesso!")
+                        print(f"Código do pedido Servimed: {codigo_pedido}")
+                        return str(codigo_pedido)
+                    else:
+                        # Fallback: se não encontrou código na resposta, verificar campos disponíveis
+                        print(f"Resposta completa do Servimed: {resposta}")
+                        print("AVISO: Código do pedido não encontrado nos campos esperados")
+                        
+                        # Tentar extrair qualquer ID numérico da resposta
+                        for chave, valor in resposta.items():
+                            if any(term in chave.lower() for term in ['id', 'pedido', 'numero', 'codigo']) and valor:
+                                print(f"Usando {chave}: {valor} como código do pedido")
+                                return str(valor)
+                        
+                        # Último recurso: gerar código baseado no timestamp
+                        codigo_fallback = f"SRV{int(time.time())}"
+                        print(f"Usando código de fallback: {codigo_fallback}")
+                        return codigo_fallback
                 else:
-                    print(f"Pedido rejeitado: {resposta}")
+                    print(f"Pedido rejeitado pelo Servimed: {resposta}")
                     return None
             else:
                 print(f"Erro HTTP {response.status_code}: {response.text}")

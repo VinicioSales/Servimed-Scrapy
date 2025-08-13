@@ -214,32 +214,43 @@ def executar_nivel_3(args):
             print(f"ID Pedido: {test_id}")
             return {"task_id": task_id, "tipo": "teste"}
             
-        elif args.pedido and args.codigo_produto:
-            # Criar pedido específico
-            print(f"Criando pedido: {args.pedido}")
-            print(f"Produto: {args.codigo_produto} (Qtd: {args.quantidade})")
+        elif args.codigo_produto:
+            # Criar pedido simples com um produto (conforme requisitos do desafio)
+            print(f"Criando pedido para produto: {args.codigo_produto}")
+            print(f"Quantidade: {args.quantidade}")
             if args.gtin:
                 print(f"GTIN: {args.gtin}")
             
+            # Credenciais do portal
             usuario = os.getenv('PORTAL_EMAIL')
             senha = os.getenv('PORTAL_PASSWORD')
             
-            produtos = [{
+            if not usuario or not senha:
+                print("ERRO: Credenciais do portal não encontradas")
+                print("Configure PORTAL_EMAIL e PORTAL_PASSWORD no .env")
+                return None
+            
+            # ID interno apenas para tracking da task (não será usado no pedido real)
+            pedido_id_interno = f"TRACK_{int(time.time())}"
+            
+            # Produto único conforme requisitos do desafio
+            produto = {
                 "gtin": args.gtin or "",
                 "codigo": args.codigo_produto,
                 "quantidade": args.quantidade
-            }]
+            }
             
             task_id = client.enqueue_pedido(
                 usuario=usuario,
                 senha=senha,
-                id_pedido=args.pedido,
-                produtos=produtos
+                id_pedido=pedido_id_interno,
+                produtos=[produto]  # Array com um produto
             )
             
             print(f"Pedido enfileirado com sucesso! Task ID: {task_id}")
+            print(f"ID Interno: {pedido_id_interno}")
             print(f"Use --status {task_id} para acompanhar")
-            return {"task_id": task_id, "pedido": args.pedido}
+            return {"task_id": task_id, "pedido": pedido_id_interno}
             
         elif args.status:
             # Verificar status
@@ -250,13 +261,13 @@ def executar_nivel_3(args):
             
         else:
             print("Para Nivel 3, use uma das opcoes:")
-            print("  --test                    : Executa teste do sistema")
-            print("  --pedido ID --codigo-produto COD --quantidade QTD [--gtin GTIN]")
-            print("  --status TASK_ID          : Verifica status de pedido")
+            print("  --test                           : Executa teste do sistema")
+            print("  --codigo-produto COD --quantidade QTD [--gtin GTIN]")
+            print("  --status TASK_ID                 : Verifica status de pedido")
             print("")
             print("Exemplos:")
             print("  python main.py --nivel 3 --test")
-            print("  python main.py --nivel 3 --pedido PED001 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493")
+            print("  python main.py --nivel 3 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493")
             print("  python main.py --nivel 3 --status task_id")
             return None
             
@@ -290,7 +301,8 @@ NIVEL 2 - Sistema de Filas com Scrapy:
 
 NIVEL 3 - Sistema de Pedidos com Scrapy:
   python main.py --nivel 3 --test                     # Teste do sistema
-  python main.py --nivel 3 --pedido PED001 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493
+  python main.py --nivel 3 --codigo-produto 444212    # Pedido simples
+  python main.py --nivel 3 --codigo-produto 444212 --quantidade 5 --gtin 7898636193493
   python main.py --nivel 3 --status TASK_ID           # Status do pedido
 
 Pré-requisitos para Nível 2:
@@ -359,12 +371,6 @@ Pré-requisitos para Nível 2:
         '--test',
         action='store_true',
         help='[Nivel 3] Executa teste do sistema de pedidos'
-    )
-    
-    parser.add_argument(
-        '--pedido',
-        type=str,
-        help='[Nivel 3] ID do pedido para criar'
     )
     
     parser.add_argument(

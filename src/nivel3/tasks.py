@@ -2,7 +2,11 @@
 Tasks Celery - Nível 3
 =======================
 
-Tasks para processamento de pedidos e callback para API.
+Tasks para processamento de pedidos CONFORME DESAFIO COTEFÁCIL:
+1. Após login, buscar produto pelo código no Servimed (usando Scrapy)
+2. Realizar pedido via formulário no site Servimed
+3. Chamar API do desafio para gerar pedido aleatório
+4. Fazer PATCH /pedido/:id com dados de confirmação do pedido
 """
 
 import json
@@ -145,15 +149,15 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         
         # 2. Realizar pedido
         print(f"[{task_id}] 2. Realizando pedido...")
-        codigo_confirmacao = pedido_client.realizar_pedido(produtos_verificados)
+        codigo_pedido_servimed = pedido_client.realizar_pedido(produtos_verificados)
         
-        if not codigo_confirmacao:
+        if not codigo_pedido_servimed:
             raise ValueError("Falha ao realizar pedido no portal")
         
-        print(f"[{task_id}] Pedido realizado! Código: {codigo_confirmacao}")
+        print(f"[{task_id}] Pedido realizado! Código Servimed: {codigo_pedido_servimed}")
         
-        # 3. Enviar callback para API
-        print(f"[{task_id}] 3. Enviando callback para API...")
+        # 3. Chamar API do desafio para gerar pedido aleatório
+        print(f"[{task_id}] 3. Chamando API do desafio para gerar pedido aleatório...")
         api_client = CallbackAPIClient(base_url=callback_url)
         
         # Autenticar na API Cotefacil
@@ -161,47 +165,39 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         if not api_auth_success:
             raise ValueError("Falha na autenticação com API Cotefacil")
         
-        # PASSO 1: Criar pedido na API (POST /pedido)
-        print(f"[{task_id}] Criando pedido na API...")
-        pedido_api_data = {
-            "itens": [
-                {
-                    "gtin": produto.get("gtin", ""),
-                    "codigo": produto["codigo"],
-                    "quantidade": produto["quantidade"]
-                }
-                for produto in produtos_verificados
-            ]
-        }
+        # Gerar pedido aleatório conforme requisito do desafio
+        pedido_aleatorio_id = gerar_pedido_aleatorio_api(api_client)
         
-        pedido_criado_id = criar_pedido_na_api(api_client, pedido_api_data)
+        if not pedido_aleatorio_id:
+            raise ValueError("Falha crítica: não foi possível gerar pedido aleatório na API")
         
-        if not pedido_criado_id:
-            print(f"[{task_id}] Falha ao criar pedido na API")
-            pedido_criado_id = str(id_pedido)  # Usar ID original como fallback
+        print(f"[{task_id}] Pedido aleatório gerado: {pedido_aleatorio_id}")
         
-        # PASSO 2: Enviar confirmação (PATCH /pedido/:id)
-        print(f"[{task_id}] Enviando confirmação do pedido...")
+        # 4. Fazer PATCH /pedido/:id com dados de confirmação
+        print(f"[{task_id}] 4. Enviando PATCH para /pedido/{pedido_aleatorio_id}...")
+        
         callback_data = {
-            "codigo_confirmacao": codigo_confirmacao,
+            "codigo_confirmacao": str(codigo_pedido_servimed),
             "status": "pedido_realizado"
         }
         
-        # Enviar PATCH para /pedido/:id
-        patch_success = enviar_patch_pedido(api_client, str(pedido_criado_id), callback_data)
+        print(f"[{task_id}] Enviando confirmação com código Servimed: {codigo_pedido_servimed}")
+        
+        # Fazer PATCH conforme especificação do desafio
+        patch_success = fazer_patch_pedido(api_client, pedido_aleatorio_id, callback_data)
         
         if not patch_success:
-            print(f"[{task_id}] Callback falhou, mas pedido foi realizado")
+            print(f"[{task_id}] PATCH falhou, mas pedido foi realizado no Servimed")
         
         # Resultado final
         resultado_final = {
             'status': 'success',
             'task_id': task_id,
-            'id_pedido': id_pedido,
-            'pedido_api_id': pedido_criado_id,
-            'codigo_confirmacao': codigo_confirmacao,
+            'id_pedido_interno': id_pedido,
+            'pedido_aleatorio_api': pedido_aleatorio_id,
+            'codigo_pedido_servimed': codigo_pedido_servimed,
             'produtos_pedido': len(produtos),
-            'callback_enviado': patch_success,
+            'patch_enviado': patch_success,
             'callback_url': callback_url,
             'timestamp': time.time()
         }
@@ -226,22 +222,24 @@ def processar_pedido_completo(self: Task, task_data: Dict[str, Any]) -> Dict[str
         }
 
 
-def criar_pedido_na_api(api_client: CallbackAPIClient, pedido_data: Dict) -> str:
+def gerar_pedido_aleatorio_api(api_client: CallbackAPIClient) -> str:
     """
-    Cria pedido na API via POST /pedido
+    Chama a API do desafio para gerar um pedido aleatório
+    Conforme requisito: "Chamar a API do desafio para gerar um pedido aleatório"
     
     Args:
         api_client: Cliente da API autenticado
-        pedido_data: Dados do pedido com itens
         
     Returns:
-        str: ID do pedido criado ou string vazia se falhar
+        str: ID do pedido aleatório ou string vazia se falhar
     """
     try:
-        # Fazer POST para criar pedido
+        print("🎯 Gerando pedido aleatório conforme requisito do desafio...")
+        
+        # Tentativa 1: POST /pedido (dados vazios para gerar aleatório)
         response = api_client.session.post(
             f"{api_client.base_url}/pedido",
-            json=pedido_data,
+            json={},  # Dados vazios conforme padrão para gerar aleatório
             timeout=30
         )
         
@@ -251,47 +249,72 @@ def criar_pedido_na_api(api_client: CallbackAPIClient, pedido_data: Dict) -> str
         if response.status_code == 201:
             resultado = response.json()
             pedido_id = resultado.get('id')
-            print(f"Pedido criado na API com ID: {pedido_id}")
-            return str(pedido_id) if pedido_id else ""
-        else:
-            print(f"Falha ao criar pedido: HTTP {response.status_code}")
-            return ""
+            if pedido_id:
+                print(f"✅ Pedido aleatório gerado: {pedido_id}")
+                return str(pedido_id)
+        
+        # Tentativa 2: Outros endpoints possíveis
+        endpoints_alternativos = ["/pedido/random", "/pedido/gerar", "/pedido/novo"]
+        
+        for endpoint in endpoints_alternativos:
+            try:
+                print(f"Tentando {endpoint}...")
+                response = api_client.session.post(
+                    f"{api_client.base_url}{endpoint}",
+                    json={},
+                    timeout=30
+                )
+                
+                if response.status_code in [200, 201]:
+                    resultado = response.json()
+                    pedido_id = resultado.get('id') or resultado.get('pedido_id')
+                    if pedido_id:
+                        print(f"✅ Pedido aleatório gerado via {endpoint}: {pedido_id}")
+                        return str(pedido_id)
+            except:
+                continue
+        
+        print("❌ Falha ao gerar pedido aleatório")
+        return ""
             
     except Exception as e:
-        print(f"Erro ao criar pedido na API: {e}")
+        print(f"❌ Erro ao gerar pedido aleatório: {e}")
         return ""
 
 
-def enviar_patch_pedido(api_client: CallbackAPIClient, id_pedido: str, callback_data: Dict) -> bool:
+def fazer_patch_pedido(api_client: CallbackAPIClient, pedido_id: str, callback_data: Dict) -> bool:
     """
-    Envia PATCH para /pedido/:id com dados de confirmação
+    Faz PATCH /pedido/:id com dados de confirmação
+    Conforme requisito: "fazer PATCH para /pedido/:id com os dados extraídos"
     
     Args:
         api_client: Cliente da API autenticado
-        id_pedido: ID do pedido
-        callback_data: Dados de confirmação
+        pedido_id: ID do pedido aleatório gerado
+        callback_data: Dados de confirmação {codigo_confirmacao, status}
         
     Returns:
         bool: True se sucesso
     """
     try:
-        # Usar a sessão autenticada do API client
+        print(f"🎯 Fazendo PATCH /pedido/{pedido_id} conforme requisito...")
+        
         response = api_client.session.patch(
-            f"{api_client.base_url}/pedido/{id_pedido}",
+            f"{api_client.base_url}/pedido/{pedido_id}",
             json=callback_data,
             timeout=30
         )
         
-        print(f"PATCH /pedido/{id_pedido} - Status: {response.status_code}")
+        print(f"PATCH /pedido/{pedido_id} - Status: {response.status_code}")
+        print(f"Request: {json.dumps(callback_data, indent=2)}")
         print(f"Response: {response.text}")
         
         if response.status_code in [200, 201, 204]:
-            print(f"Callback enviado com sucesso!")
+            print(f"✅ PATCH enviado com sucesso!")
             return True
         else:
-            print(f"Callback falhou: HTTP {response.status_code}")
+            print(f"❌ PATCH falhou: HTTP {response.status_code}")
             return False
             
     except Exception as e:
-        print(f"Erro no callback: {e}")
+        print(f"❌ Erro no PATCH: {e}")
         return False
